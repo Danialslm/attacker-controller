@@ -1,2 +1,5 @@
 .idea
 .venv
+.env
+todo.txt
+*.session

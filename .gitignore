@@ -3,3 +3,4 @@
 .env
 todo.txt
 *.session
+__pycache__/

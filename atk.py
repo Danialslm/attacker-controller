@@ -2,7 +2,7 @@ import os
 import random
 import re
 from time import sleep
-
+import logging
 import redis
 import requests
 from bs4 import BeautifulSoup
@@ -10,9 +10,9 @@ from pyrogram import Client, filters
 from pyrogram.raw import functions
 from pyrogram.raw.functions.account import GetAuthorizations
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
+logging.basicConfig(level='INFO')
 # Pishniyaz
-app = Client('attack', 993381, '10df0e3b765cf30c0b8bd147b3b10c92')
+app = Client('attack', 1735810, '92c95a8087736c3d61e115bc2fb54171', bot_token='5145180460:AAFySTiZfvxXdTOCc_0MKljB8Xjx5z8PaqE')
 redis = redis.StrictRedis(host='localhost', port=6379, db=8, charset='UTF-8', decode_responses=True)
 user = [763410818, 2130894243, 1758226276, 631740306, 1819858111]
 apps = {}
@@ -160,7 +160,7 @@ def create_new_tg_app(
 # End Function
 # Start CapcherOne
 
-@app.on_message(filters.command(["cleanall"], None))
+@app.on_message(filters.command(["cleanall"]))
 def clenall(client, message):
     user = message.from_user.id
     lists = redis.smembers(f'accounts{user}')
@@ -204,7 +204,7 @@ def clenall(client, message):
     print("Down")
 
 
-@app.on_message(filters.command(["del"], None))
+@app.on_message(filters.command(["del"]))
 def delacc(client, message):
     user = message.from_user.id
     ph = int(message.command[1])
@@ -225,7 +225,7 @@ def delacc(client, message):
     message.reply_text(f"• اکانت {ph} با موفقیت حذف شد !")
 
 
-@app.on_message(filters.command(["check"], None))
+@app.on_message(filters.command(["check"]))
 def setlink(client, message):
     if message.text:
         user = message.from_user.id

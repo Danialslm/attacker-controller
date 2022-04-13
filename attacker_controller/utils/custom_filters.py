@@ -1,7 +1,7 @@
 from pyrogram import filters
 from pyrogram.types import Message
 
-from utils import administration
+from attacker_controller.utils import administration
 
 
 async def admin_filter(_, __, m: Message):

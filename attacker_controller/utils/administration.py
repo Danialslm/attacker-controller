@@ -2,7 +2,7 @@ from typing import List, Optional
 
 import aioredis
 from decouple import config, Csv
-from pyrogram.types import Message
+
 MAIN_ADMINS = config('main_admins', cast=Csv(cast=int))
 """ Main admins are like normal admins but also can add and remove normal admins. """
 

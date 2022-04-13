@@ -37,7 +37,7 @@ async def check_accounts(client, message):
 
 
 @app.on_message(
-    filters.regex(r'^\/add_admin (\d+(?:\s+\d+)*)$') &
+    filters.regex(r'^\/addadmin (\d+(?:\s+\d+)*)$') &
     filters.group &
     ~filters.edited &
     filters.user(MAIN_ADMINS)
@@ -50,7 +50,7 @@ async def add_admin(client, message):
 
 
 @app.on_message(
-    filters.regex(r'^\/remove_admin (\d+(?:\s+\d+)*)$') &
+    filters.regex(r'^\/removeadmin (\d+(?:\s+\d+)*)$') &
     filters.group &
     ~filters.edited &
     filters.user(MAIN_ADMINS)

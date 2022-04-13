@@ -4,3 +4,4 @@
 todo.txt
 *.session
 __pycache__/
+!.gitkeep

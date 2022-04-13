@@ -39,9 +39,4 @@ async def add_admin(client: Client, message: Message):
     await message.reply_text('چت ایدی های داده شده از لیست ادمین‌ها حذف شد.')
 
 
-def main():
-    app.run()
-
-
-if __name__ == '__main__':
-    main()
+app.run()

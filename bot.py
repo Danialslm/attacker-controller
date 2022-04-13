@@ -15,7 +15,7 @@ app = Client(
 )
 
 MAIN_ADMINS = config('main_admins', cast=Csv(cast=int))
-""" Main admins can do everything! like add and remove normal admins. """
+""" Main admins are like normal admins but also can add and remove normal admins. """
 
 
 @app.on_message(

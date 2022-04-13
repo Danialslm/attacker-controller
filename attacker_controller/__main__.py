@@ -4,7 +4,7 @@ from decouple import config
 from pyrogram import Client, filters
 from pyrogram.types import Message
 
-from utils import administration
+from utils import storage
 
 logging.basicConfig(level='INFO')
 
@@ -20,12 +20,12 @@ app = Client(
     filters.regex(r'^\/addadmin (\d+(?:\s+\d+)*)$') &
     filters.group &
     ~filters.edited &
-    filters.user(administration.MAIN_ADMINS)
+    filters.user(storage.MAIN_ADMINS)
 )
 async def add_admin(client: Client, message: Message):
     """ Add the given chat ids to the admin list. """
     users_chat_id = message.matches[0].group(1).split()
-    await administration.add_admin(*users_chat_id)
+    await storage.add_admin(*users_chat_id)
     await message.reply_text('چت ایدی های داده شده به لیست ادمین‌ها اضافه شد.')
 
 
@@ -33,12 +33,12 @@ async def add_admin(client: Client, message: Message):
     filters.regex(r'^\/removeadmin (\d+(?:\s+\d+)*)$') &
     filters.group &
     ~filters.edited &
-    filters.user(administration.MAIN_ADMINS)
+    filters.user(storage.MAIN_ADMINS)
 )
 async def add_admin(client: Client, message: Message):
     """ Remove the given chat ids from the admin list.  """
     users_chat_id = message.matches[0].group(1).split()
-    await administration.remove_admin(*users_chat_id)
+    await storage.remove_admin(*users_chat_id)
     await message.reply_text('چت ایدی های داده شده از لیست ادمین‌ها حذف شد.')
 
 

@@ -18,25 +18,30 @@ MAIN_ADMINS = config('main_admins', cast=Csv(cast=int))
 """ Main admins can do everything! like add and remove normal admins. """
 
 
-@app.on_message(filters.command('clean') & filters.group)
+@app.on_message(filters.command('clean') & filters.group & ~filters.edited)
 async def clean_accounts(client, message):
     """ Clean all logged-in accounts from the bot. """
     pass
 
 
-@app.on_message(filters.command('del') & filters.group)
+@app.on_message(filters.command('del') & filters.group & ~filters.edited)
 async def delete_account(client, message):
     """ Delete a logged-in account from the bot. """
     pass
 
 
-@app.on_message(filters.command('check') & filters.group)
+@app.on_message(filters.command('check') & filters.group & ~filters.edited)
 async def check_accounts(client, message):
     """ Check logged-in accounts status. """
     pass
 
 
-@app.on_message(filters.regex(r'^\/add_admin (\d+(?:\s+\d+)*)$') & filters.group & filters.user(MAIN_ADMINS))
+@app.on_message(
+    filters.regex(r'^\/add_admin (\d+(?:\s+\d+)*)$') &
+    filters.group &
+    ~filters.edited &
+    filters.user(MAIN_ADMINS)
+)
 async def add_admin(client, message):
     """ Add the given chat ids to the admin list. """
     users_chat_id = message.matches[0].group(1).split()
@@ -44,7 +49,12 @@ async def add_admin(client, message):
     await message.reply_text('چت ایدی های داده شده به لیست ادمین‌ها اضافه شد.')
 
 
-@app.on_message(filters.regex(r'^\/remove_admin (\d+(?:\s+\d+)*)$') & filters.group & filters.user(MAIN_ADMINS))
+@app.on_message(
+    filters.regex(r'^\/remove_admin (\d+(?:\s+\d+)*)$') &
+    filters.group &
+    ~filters.edited &
+    filters.user(MAIN_ADMINS)
+)
 async def add_admin(client, message):
     """ Remove the given chat ids from the admin list.  """
     users_chat_id = message.matches[0].group(1).split()

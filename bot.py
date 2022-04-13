@@ -2,6 +2,7 @@ import logging
 
 from decouple import config
 from pyrogram import Client, filters
+from pyrogram.types import Message
 
 from utils import administration
 
@@ -21,7 +22,7 @@ app = Client(
     ~filters.edited &
     filters.user(administration.MAIN_ADMINS)
 )
-async def add_admin(client, message):
+async def add_admin(client: Client, message: Message):
     """ Add the given chat ids to the admin list. """
     users_chat_id = message.matches[0].group(1).split()
     await administration.add_admin(*users_chat_id)
@@ -34,7 +35,7 @@ async def add_admin(client, message):
     ~filters.edited &
     filters.user(administration.MAIN_ADMINS)
 )
-async def add_admin(client, message):
+async def add_admin(client: Client, message: Message):
     """ Remove the given chat ids from the admin list.  """
     users_chat_id = message.matches[0].group(1).split()
     await administration.remove_admin(*users_chat_id)

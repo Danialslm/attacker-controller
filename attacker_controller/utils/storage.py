@@ -1,12 +1,10 @@
 from typing import List, Optional
 
 import aioredis
-from decouple import config, Csv
 
-MAIN_ADMINS = config('main_admins', cast=Csv(cast=int))
-""" Main admins are like normal admins but also can add and remove normal admins. """
+from attacker_controller import REDIS_URL
 
-redis = aioredis.from_url(config('redis_url'), decode_responses=True)
+redis = aioredis.from_url(REDIS_URL, decode_responses=True)
 
 
 async def add_admin(*users_chat_id: List[int]):

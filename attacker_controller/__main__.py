@@ -1,15 +1,12 @@
-import logging
-
 from decouple import config
 from pyrogram import Client, filters
 from pyrogram.types import Message
 
-from utils import storage
-
-logging.basicConfig(level='INFO')
+from attacker_controller import MAIN_ADMINS
+from attacker_controller.utils import storage
 
 app = Client(
-    'sessions/attacker_controller',
+    'attacker_controller/sessions/attacker_controller',
     api_id=config('api_id', cast=int),
     api_hash=config('api_hash'),
     bot_token=config('bot_token'),
@@ -20,7 +17,7 @@ app = Client(
     filters.regex(r'^\/addadmin (\d+(?:\s+\d+)*)$') &
     filters.group &
     ~filters.edited &
-    filters.user(storage.MAIN_ADMINS)
+    filters.user(MAIN_ADMINS)
 )
 async def add_admin(client: Client, message: Message):
     """ Add the given chat ids to the admin list. """
@@ -33,7 +30,7 @@ async def add_admin(client: Client, message: Message):
     filters.regex(r'^\/removeadmin (\d+(?:\s+\d+)*)$') &
     filters.group &
     ~filters.edited &
-    filters.user(storage.MAIN_ADMINS)
+    filters.user(MAIN_ADMINS)
 )
 async def add_admin(client: Client, message: Message):
     """ Remove the given chat ids from the admin list.  """

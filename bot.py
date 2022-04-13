@@ -18,24 +18,6 @@ MAIN_ADMINS = config('main_admins', cast=Csv(cast=int))
 """ Main admins can do everything! like add and remove normal admins. """
 
 
-@app.on_message(filters.command('clean') & filters.group & ~filters.edited)
-async def clean_accounts(client, message):
-    """ Clean all logged-in accounts from the bot. """
-    pass
-
-
-@app.on_message(filters.command('del') & filters.group & ~filters.edited)
-async def delete_account(client, message):
-    """ Delete a logged-in account from the bot. """
-    pass
-
-
-@app.on_message(filters.command('check') & filters.group & ~filters.edited)
-async def check_accounts(client, message):
-    """ Check logged-in accounts status. """
-    pass
-
-
 @app.on_message(
     filters.regex(r'^\/addadmin (\d+(?:\s+\d+)*)$') &
     filters.group &

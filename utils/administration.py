@@ -1,5 +1,8 @@
 import aioredis
-from decouple import config
+from decouple import config, Csv
+
+MAIN_ADMINS = config('main_admins', cast=Csv(cast=int))
+""" Main admins are like normal admins but also can add and remove normal admins. """
 
 redis = aioredis.from_url(config('redis_url'), decode_responses=True)
 

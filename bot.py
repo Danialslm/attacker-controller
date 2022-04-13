@@ -1,6 +1,6 @@
 import logging
 
-from decouple import config, Csv
+from decouple import config
 from pyrogram import Client, filters
 
 from utils import administration
@@ -14,15 +14,12 @@ app = Client(
     bot_token=config('bot_token'),
 )
 
-MAIN_ADMINS = config('main_admins', cast=Csv(cast=int))
-""" Main admins are like normal admins but also can add and remove normal admins. """
-
 
 @app.on_message(
     filters.regex(r'^\/addadmin (\d+(?:\s+\d+)*)$') &
     filters.group &
     ~filters.edited &
-    filters.user(MAIN_ADMINS)
+    filters.user(administration.MAIN_ADMINS)
 )
 async def add_admin(client, message):
     """ Add the given chat ids to the admin list. """
@@ -35,7 +32,7 @@ async def add_admin(client, message):
     filters.regex(r'^\/removeadmin (\d+(?:\s+\d+)*)$') &
     filters.group &
     ~filters.edited &
-    filters.user(MAIN_ADMINS)
+    filters.user(administration.MAIN_ADMINS)
 )
 async def add_admin(client, message):
     """ Remove the given chat ids from the admin list.  """

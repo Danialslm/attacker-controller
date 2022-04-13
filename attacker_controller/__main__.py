@@ -39,4 +39,23 @@ async def add_admin(client: Client, message: Message):
     await message.reply_text('چت ایدی های داده شده از لیست ادمین‌ها حذف شد.')
 
 
+@app.on_message(
+    filters.command('adminlist') &
+    filters.group &
+    ~filters.edited &
+    filters.user(MAIN_ADMINS)
+)
+async def admin_list(client: Client, message: Message):
+    """ Return list of current admins. """
+    admins_chat_id = await storage.get_admins()
+
+    admin_list_text = ''
+    admins = await client.get_users(admins_chat_id)
+    for admin in admins:
+        admin_full_name = admin.first_name + (admin.last_name if admin.last_name else '')
+        admin_list_text += f'<a href="tg://user?id={admin.id}">{admin_full_name}</a>'
+
+    await message.reply_text(admin_list_text, parse_mode='html')
+
+
 app.run()

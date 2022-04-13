@@ -47,15 +47,12 @@ async def add_admin(client: Client, message: Message):
 )
 async def admin_list(client: Client, message: Message):
     """ Return list of current admins. """
-    admins_chat_id = await storage.get_admins()
-
-    admin_list_text = ''
-    admins = await client.get_users(admins_chat_id)
-    for admin in admins:
-        admin_full_name = admin.first_name + (admin.last_name if admin.last_name else '')
-        admin_list_text += f'<a href="tg://user?id={admin.id}">{admin_full_name}</a>'
-
-    await message.reply_text(admin_list_text, parse_mode='html')
+    admins_chat_id = '\n'.join(await storage.get_admins())
+    text = (
+        'لیست چت ایدی ادمین‌های فعلی ربات:\n\n'
+        f'{admins_chat_id}'
+    )
+    await message.reply_text(text)
 
 
 app.run()

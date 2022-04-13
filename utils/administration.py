@@ -20,9 +20,13 @@ async def remove_admin(*users_chat_id):
     return await redis.srem('admins', *users_chat_id)
 
 
-async def get_admins():
+async def get_admins(user_chat_id=None):
     """
+    If `user_chat_id` was provided, return boolean that shows user is admin or not.
+
     Get a set of current admins.
     Return empty set if there is no admin.
     """
+    if user_chat_id:
+        return await redis.sismember('admins', user_chat_id)
     return await redis.smembers('admins')

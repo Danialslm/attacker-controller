@@ -43,3 +43,11 @@ async def add_new_attacker(phone: str, api_id: str, api_hash: str) -> int:
     """
     data = json.dumps({'phone': phone, 'api_id': api_id, 'api_hash': api_hash})
     return await redis.sadd('attackers', data)
+
+
+async def get_attackers():
+    """
+    Get set of attackers in json format.
+    Return empty if there is no attacker.
+    """
+    return await redis.smembers('attackers')

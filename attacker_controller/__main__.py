@@ -1,3 +1,5 @@
+import json
+
 from decouple import config
 from pyrogram import Client, filters
 from pyrogram.types import Message
@@ -89,5 +91,25 @@ async def login_attacker(client: Client, message: Message):
 
     res = await login(phone, password)
     await message.reply_text(res[1])
+
+
+@app.on_message(
+    filters.command('attackerlist') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
+async def attacker_list(client: Client, message: Message):
+    """
+    Get list of attackers phone.
+    """
+    text = 'لیست اتکرها : \n\n'
+    attackers = await storage.get_attackers()
+    for attacker in attackers:
+        attacker = json.loads(attacker)
+        text += f'`{attacker["phone"]}`\n\n'
+
+    await message.reply_text(text)
+
 
 app.run()

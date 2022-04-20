@@ -36,7 +36,7 @@ async def add_admin(client: Client, message: Message):
     ~filters.edited &
     filters.user(MAIN_ADMINS)
 )
-async def add_admin(client: Client, message: Message):
+async def remove_admin(client: Client, message: Message):
     """ Remove the given chat ids from the admin list.  """
     users_chat_id = message.matches[0].group(1).split()
     await storage.remove_admin(*users_chat_id)

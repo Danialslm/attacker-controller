@@ -51,3 +51,16 @@ async def get_attackers():
     Return empty if there is no attacker.
     """
     return await redis.smembers('attackers')
+
+
+async def remove_attacker(phone: str) -> Union[None, int]:
+    """
+    Remove the given phone from attackers.
+    Return number of remove items if any phone matched in attackers.
+    """
+    attackers = await get_attackers()
+    for attacker in attackers:
+        attacker = json.loads(attacker)
+
+        if attacker['phone'] == phone:
+            return await redis.srem(attacker)

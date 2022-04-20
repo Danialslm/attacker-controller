@@ -112,4 +112,19 @@ async def attacker_list(client: Client, message: Message):
     await message.reply_text(text)
 
 
+@app.on_message(
+    filters.command('^\/removeattacker (\+\d+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
+async def remove_attacker(client: Client, message: Message):
+    """
+    Remove given phone from attacker list.
+    """
+    phone = message.matches[0].group(1)
+    await storage.remove_attacker(phone)
+    await message.reply_text('شماره داده شده از لیست اتکر‌ها حذف شد.')
+
+
 app.run()

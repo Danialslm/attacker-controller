@@ -113,7 +113,7 @@ async def attacker_list(client: Client, message: Message):
 
 
 @app.on_message(
-    filters.command('^\/removeattacker (\+\d+)$') &
+    filters.regex(r'^\/removeattacker (\+\d+)$') &
     filters.group &
     ~filters.edited &
     admin

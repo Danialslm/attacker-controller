@@ -60,7 +60,7 @@ async def remove_attacker(phone: str) -> Union[None, int]:
     """
     attackers = await get_attackers()
     for attacker in attackers:
-        attacker = json.loads(attacker)
+        json_attacker = json.loads(attacker)
 
-        if attacker['phone'] == phone:
-            return await redis.srem(attacker)
+        if json_attacker['phone'] == phone:
+            return await redis.srem('attackers', attacker)

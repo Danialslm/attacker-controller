@@ -1,3 +1,4 @@
+import json
 from typing import List, Optional, Union
 
 import aioredis
@@ -33,3 +34,12 @@ async def get_admins(user_chat_id: Optional[str] = None) -> Union[bool, set]:
     if user_chat_id:
         return await redis.sismember('admins', user_chat_id)
     return await redis.smembers('admins')
+
+
+async def add_new_attacker(phone: str, api_id: str, api_hash: str) -> int:
+    """
+    Add new attacker to attackers set in json format.
+    Return number of added item.
+    """
+    data = json.dumps({'phone': phone, 'api_id': api_id, 'api_hash': api_hash})
+    return await redis.sadd('attackers', data)

@@ -4,7 +4,7 @@ from pyrogram.types import Message
 
 from attacker_controller import MAIN_ADMINS
 from attacker_controller.utils import storage
-from attacker_controller.utils.auth import send_password
+from attacker_controller.utils.auth import send_password, login
 from attacker_controller.utils.custom_filters import admin
 
 app = Client(
@@ -74,5 +74,20 @@ async def add_attacker(client: Client, message: Message):
     else:
         await message.reply_text('کد ارسال شد. مهلت ارسال کد یک دقیقه می‌باشد.')
 
+
+@app.on_message(
+    filters.regex(r'^\/login (\+\d+) (.+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
+async def login_attacker(client: Client, message: Message):
+    """ Login to attacker. """
+    match = message.matches[0]
+    phone = match.group(1)
+    password = match.group(2)
+
+    res = await login(phone, password)
+    await message.reply_text(res[1])
 
 app.run()

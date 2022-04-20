@@ -1,11 +1,74 @@
 from asyncio.exceptions import TimeoutError
 from typing import Tuple
 
-import aiohttp
+from aiohttp import ClientSession, ClientTimeout
+from bs4 import BeautifulSoup
 
-from attacker_controller.utils.storage import redis
+from attacker_controller.utils.storage import redis, add_new_attacker
 
-timeout = aiohttp.ClientTimeout(total=10)
+timeout = ClientTimeout(total=10)
+
+
+async def _create_application(
+    session: ClientSession,
+    stel_token: str,
+    app_hash: str,
+    app_title: str = 'attacker',
+    app_shortname: str = 'attacker',
+    app_url: str = '',
+    app_platform: str = 'other',
+    app_desc: str = '',
+):
+    """
+    Create a new application by provided credentials.
+
+    URL: 'https://my.telegram.org/apps/create'
+    """
+    url = 'https://my.telegram.org/apps/create'
+    headers = {
+        'Cookie': 'stel_token=' + stel_token
+    }
+    data = {
+        'hash': app_hash,
+        'app_title': app_title,
+        'app_shortname': app_shortname,
+        'app_url': app_url,
+        'app_platform': app_platform,
+        'app_desc': app_desc
+    }
+
+    async with session.post(url, data=data, headers=headers) as res:
+        # todo: complete this section
+        print(await res.read())
+        print(res.status)
+
+
+async def _get_api_id_and_api_hash(session: ClientSession, stel_token: str) -> Tuple[str, str]:
+    """
+    Get `api_id` and `api_hash` by scraping on https://my.telegram.org/apps.
+
+    If account doesn't have an application, create one.
+    """
+    url = 'https://my.telegram.org/apps'
+    headers = {
+        'Cookie': 'stel_token=' + stel_token,
+    }
+
+    async with session.get(url, headers=headers) as res:
+        html_content = await res.read()
+        soup = BeautifulSoup(html_content.decode(), 'html.parser')
+        # check with the title page whether the app was already created or not
+        page_title = soup.title.string
+        if page_title == 'Create new application':
+            # if there is no application, create and try again
+            app_hash = soup.find("input", {"name": "hash"}).get("value")
+            await _create_application(session, stel_token, app_hash)
+            api_id, api_hash = await _get_api_id_and_api_hash(session, stel_token)
+        else:
+            inputs = soup.find_all("span", {"class": "input-xlarge"})
+            api_id = inputs[0].string
+            api_hash = inputs[1].string
+        return api_id, api_hash
 
 
 async def send_password(phone: str) -> Tuple[bool, str]:
@@ -22,7 +85,7 @@ async def send_password(phone: str) -> Tuple[bool, str]:
     data = {
         'phone': phone
     }
-    async with aiohttp.ClientSession(timeout=timeout) as session:
+    async with ClientSession(timeout=timeout) as session:
         try:
             async with session.post(url, data=data) as res:
                 if res.status == 200:
@@ -40,6 +103,51 @@ async def send_password(phone: str) -> Tuple[bool, str]:
 
                 res_text = await res.read()
                 message = f'{res_text.decode()}خروجی غیرمنتظره! ریسپانس تلگرام : '
+                return False, message
+        except TimeoutError:
+            return False, f'جوابی از سوی تلگرام بعد از {timeout.total} ثانیه دریافت نشد.'
+
+
+async def login(phone: str, password: str) -> Tuple[bool, str]:
+    """
+    Login account by provided credentials.
+
+    returns:
+        bool: shows that the request was successful or not.
+        str: response text
+
+    URL: https://my.telegram.org/auth/login
+    """
+    # get `random_hash` by phone number
+    random_hash = await redis.get(phone)
+    if not random_hash:
+        return False, 'کد منقضی یا نامعتبر است.'
+
+    url = 'https://my.telegram.org/auth/login'
+    data = {
+        'phone': phone,
+        'password': password,
+        'random_hash': random_hash,
+    }
+
+    async with ClientSession(timeout=timeout) as session:
+        try:
+            async with session.post(url, data=data) as res:
+                if res.status == 200:
+                    if res.content_type == 'text/html':
+                        message = await res.read()
+                        return False, message.decode()
+
+                    elif res.content_type == 'application/json':
+                        # get telegram cookie after login
+                        stel_token = res.cookies.get('stel_token').value
+
+                        api_id, api_hash = await _get_api_id_and_api_hash(session, stel_token)
+                        await add_new_attacker(phone, api_id, api_hash)
+                        return True, 'شماره ارسال شده به لیست اتکرها اضافه شد.'
+
+                res_text = await res.read()
+                message = f'{res_text.decode()}خروجی غیرمنتظره! ریسپانس تلگرام :\n '
                 return False, message
         except TimeoutError:
             return False, f'جوابی از سوی تلگرام بعد از {timeout.total} ثانیه دریافت نشد.'

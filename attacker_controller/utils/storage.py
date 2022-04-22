@@ -1,4 +1,3 @@
-import json
 from typing import List, Optional, Union
 
 import aioredis
@@ -38,29 +37,26 @@ async def get_admins(user_chat_id: Optional[str] = None) -> Union[bool, set]:
 
 async def add_new_attacker(phone: str, api_id: str, api_hash: str) -> int:
     """
-    Add new attacker to attackers set in json format.
-    Return number of added item.
+    Return 1 if key doesn't already exist or 0 if exists.
     """
-    data = json.dumps({'phone': phone, 'api_id': api_id, 'api_hash': api_hash})
-    return await redis.sadd('attackers', data)
+    await redis.sadd('attackers', phone)
+    return await redis.hmset('attacker:' + phone, {'api_id': api_id, 'api_hash': api_hash})
 
 
-async def get_attackers():
+async def get_attackers(phone: Optional[str] = None) -> Union[dict, set]:
     """
-    Get set of attackers in json format.
-    Return empty if there is no attacker.
+    Get one or all attackers.
+    Return a set of attackers or a dict of attacker details.
     """
+    if phone is not None:
+        return await redis.hgetall('attacker:' + phone)
     return await redis.smembers('attackers')
 
 
-async def remove_attacker(phone: str) -> Union[None, int]:
+async def remove_attacker(phone: str) -> int:
     """
     Remove the given phone from attackers.
-    Return number of remove items if any phone matched in attackers.
+    Return 1 or 0 based on remove operation.
     """
-    attackers = await get_attackers()
-    for attacker in attackers:
-        json_attacker = json.loads(attacker)
-
-        if json_attacker['phone'] == phone:
-            return await redis.srem('attackers', attacker)
+    await redis.srem('attackers', phone)
+    return await redis.delete('attacker:' + phone)

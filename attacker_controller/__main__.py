@@ -1,11 +1,20 @@
+import os
+import re
+
 from decouple import config
 from pyrogram import Client, filters
+from pyrogram.errors.exceptions import (
+    FloodWait, PhoneCodeExpired,
+    SessionPasswordNeeded, PhoneCodeEmpty,
+    PhoneNumberInvalid, BadRequest,
+)
 from pyrogram.types import Message
 
 from attacker_controller import MAIN_ADMINS
-from attacker_controller.utils import storage
-from attacker_controller.utils.auth import send_password, login
+from attacker_controller.utils import storage, auth
 from attacker_controller.utils.custom_filters import admin
+
+ATTACKERS = {}
 
 app = Client(
     'attacker_controller/sessions/attacker_controller',
@@ -60,21 +69,36 @@ async def admin_list(client: Client, message: Message):
 
 # attacker authentication
 @app.on_message(
-    filters.regex(r'^\/sendpassword (\+\d+)$') &
+    filters.regex(r'^\/sendcode (\+\d+)$') &
     filters.group &
     ~filters.edited &
     admin
 )
-async def add_attacker(client: Client, message: Message):
-    """ Add an attacker to bot. """
+async def send_code(client: Client, message: Message):
+    """
+    Send Login code to given phone number.
+    """
     phone = message.matches[0].group(1)
-    res = await send_password(phone)
+    msg = await message.reply_text('درحال ارسال درخواست. لطفا صبر کنید...')
 
-    # if the request was not success, send error message
-    if not res[0]:
-        await message.reply_text(res[1])
+    ATTACKERS[phone] = Client(
+        f'attacker_controller/sessions/attackers/{phone}',
+        api_id=config('api_id', cast=int),
+        api_hash=config('api_hash'),
+    )
+    await ATTACKERS[phone].connect()
+    try:
+        sent_code = await ATTACKERS[phone].send_code(phone)
+    except FloodWait as e:
+        await msg.edit('ارسال درخواست با محدودیت مواجه شده است. لطفا {} ثانیه دیگر امتحان کنید.'.format(e.x))
+        os.remove(f'attacker_controller/sessions/attackers/{phone}.session')
+    except PhoneNumberInvalid:
+        await msg.edit('شماره وارد شده نادرست است.')
+        os.remove(f'attacker_controller/sessions/attackers/{phone}.session')
     else:
-        await message.reply_text('کد ارسال شد. مهلت ارسال کد یک دقیقه می‌باشد.')
+        # store phone code hash for one minute
+        await storage.redis.set(f'phone_code_hash:{phone}', sent_code.phone_code_hash, 120)
+        await msg.edit('کد ارسال شد.')
 
 
 @app.on_message(
@@ -89,7 +113,7 @@ async def login_attacker(client: Client, message: Message):
     phone = match.group(1)
     password = match.group(2)
 
-    res = await login(phone, password)
+    res = await auth.login(phone, password)
     await message.reply_text(res[1])
 
 

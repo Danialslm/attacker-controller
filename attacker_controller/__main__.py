@@ -1,9 +1,13 @@
 import os
+import re
 
 from decouple import config
 from pyrogram import Client, filters
 from pyrogram.errors.exceptions import (
-    FloodWait, PhoneNumberInvalid,
+    FloodWait, PhoneCodeExpired,
+    SessionPasswordNeeded, PhoneCodeEmpty,
+    PhoneNumberInvalid, BadRequest,
+    PasswordHashInvalid,
 )
 from pyrogram.types import Message
 
@@ -32,6 +36,38 @@ def _remove_session(session_name):
         return False
 
     return True
+
+
+async def _get_api_id_and_api_hash(phone):
+    """
+    Get api id and api hash by given phone.
+    """
+
+    async def _error(err_reason):
+        # await ATTACKERS[phone].logout()
+        del ATTACKERS[phone]
+        _remove_session(phone)
+        return (
+            'خطایی هنگام گرفتن api id و api hash به وجود آمد و اکانت لاگ اوت شد.\n'
+            'دلیل خطا:\n{}'.format(err_reason)
+        )
+
+    # now its time to get account api id and api hash from https://my.telegram.org
+    res = await auth.send_password(phone)
+    if not res[0]:
+        # sending password was failed
+        return await _error(res[1])
+
+    # get password from official telegram bot chat history
+    last_message = await ATTACKERS[phone].get_history(777000, limit=1)
+    web_password = re.match(r'.*This is your login code:\n(.*)\n', last_message[0].text).group(1)
+    res = await auth.login(phone, web_password)
+
+    if not res[0]:
+        # logging to web was failed
+        return await _error(res[1])
+    else:
+        return 'فرایند به اتمام رسید و {}'.format(res[1])
 
 
 # admin setting commands
@@ -99,6 +135,7 @@ async def send_code(client: Client, message: Message):
     await ATTACKERS[phone].connect()
     try:
         sent_code = await ATTACKERS[phone].send_code(phone)
+        # todo: show sending type
     except FloodWait as e:
         await msg.edit('ارسال درخواست با محدودیت مواجه شده است. لطفا {} ثانیه دیگر امتحان کنید.'.format(e.x))
         _remove_session(phone)
@@ -110,6 +147,8 @@ async def send_code(client: Client, message: Message):
         await storage.redis.set(f'phone_code_hash:{phone}', sent_code.phone_code_hash, 60)
         await msg.edit('کد ارسال شد.')
 
+    await ATTACKERS[phone].disconnect()
+
 
 @app.on_message(
     filters.regex(r'^\/login (\+\d+) (.+)$') &
@@ -118,13 +157,41 @@ async def send_code(client: Client, message: Message):
     admin
 )
 async def login_attacker(client: Client, message: Message):
-    """ Login to attacker. """
-    match = message.matches[0]
-    phone = match.group(1)
-    password = match.group(2)
+    """
+    Login to account by provided credentials.
+    """
+    phone = message.matches[0].group(1)
+    phone_code_hash = await storage.redis.get(f'phone_code_hash:{phone}') or ''
 
-    res = await auth.login(phone, password)
-    await message.reply_text(res[1])
+    args = message.matches[0].group(2).split()
+    code, password = args[0], None
+    if len(args) == 2:
+        password = args[1]
+
+    msg = await message.reply_text('درحال لاگین با اطلاعات داده شده...')
+
+    await ATTACKERS[phone].connect()
+    try:
+        await ATTACKERS[phone].sign_in(phone, phone_code_hash, code)
+    except (PhoneCodeExpired, PhoneCodeEmpty):
+        await msg.edit('کد منقضی یا اشتباه است.')
+    except SessionPasswordNeeded:
+        if password is not None:
+            try:
+                await ATTACKERS[phone].check_password(password)
+            except (PasswordHashInvalid, BadRequest):
+                await msg.edit('پسورد اشتباه است!')
+            else:
+                await msg.edit(await _get_api_id_and_api_hash(phone))
+        else:
+            await msg.edit('اکانت دارای پسورد می‌باشد. لطفا پسورد را بعد از کد با یک فاصله ارسال کنید.')
+    except KeyError:
+        await msg.edit('مطمئن باشید قبل از لاگین به اکانت درخواست ارسال کد را کرده اید.')
+    else:
+        await msg.edit(await _get_api_id_and_api_hash(phone))
+
+    await storage.redis.delete(f'phone_code_hash:{phone}')
+    await ATTACKERS[phone].disconnect()
 
 
 # attacker setting commands

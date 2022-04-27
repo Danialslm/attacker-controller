@@ -224,6 +224,7 @@ async def remove_attacker(client: Client, message: Message):
     """
     phone = message.matches[0].group(1)
     await storage.remove_attacker(phone)
+    _remove_attacker_session(phone)
     await message.reply_text('شماره داده شده از لیست اتکر‌ها حذف شد.')
 
 

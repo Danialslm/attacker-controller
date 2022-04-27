@@ -25,7 +25,7 @@ app = Client(
 )
 
 
-def _remove_session(session_name):
+def _remove_attacker_session(session_name):
     """
     Remove a attacker session by given session name.
     Return boolean that shows the file removed or no.
@@ -46,7 +46,7 @@ async def _get_api_id_and_api_hash(phone):
     async def _error(err_reason):
         # await ATTACKERS[phone].logout()
         del ATTACKERS[phone]
-        _remove_session(phone)
+        _remove_attacker_session(phone)
         return (
             'خطایی هنگام گرفتن api id و api hash به وجود آمد و اکانت لاگ اوت شد.\n'
             'دلیل خطا:\n{}'.format(err_reason)
@@ -138,10 +138,10 @@ async def send_code(client: Client, message: Message):
         # todo: show sending type
     except FloodWait as e:
         await msg.edit('ارسال درخواست با محدودیت مواجه شده است. لطفا {} ثانیه دیگر امتحان کنید.'.format(e.x))
-        _remove_session(phone)
+        _remove_attacker_session(phone)
     except PhoneNumberInvalid:
         await msg.edit('شماره وارد شده نادرست است.')
-        _remove_session(phone)
+        _remove_attacker_session(phone)
     else:
         # store phone code hash for one minute
         await storage.redis.set(f'phone_code_hash:{phone}', sent_code.phone_code_hash, 60)

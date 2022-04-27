@@ -9,7 +9,7 @@ from pyrogram.errors.exceptions import (
     PhoneNumberInvalid, BadRequest,
     PasswordHashInvalid,
 )
-from pyrogram.types import Message
+from pyrogram.types import Message, SentCode
 
 from attacker_controller import MAIN_ADMINS
 from attacker_controller.utils import storage, auth
@@ -134,8 +134,16 @@ async def send_code(client: Client, message: Message):
     )
     await ATTACKERS[phone].connect()
     try:
-        sent_code = await ATTACKERS[phone].send_code(phone)
-        # todo: show sending type
+        sent_code: SentCode = await ATTACKERS[phone].send_code(phone)
+        if sent_code.type == 'app':
+            type_text = 'پیام در پیوی تلگرام'
+        elif sent_code.type == 'sms':
+            type_text = 'اس ام اس'
+        elif sent_code.type == 'call':
+            type_text = 'تماس تلفنی'
+        else:
+            type_text = sent_code.type
+
     except FloodWait as e:
         await msg.edit('ارسال درخواست با محدودیت مواجه شده است. لطفا {} ثانیه دیگر امتحان کنید.'.format(e.x))
         _remove_attacker_session(phone)
@@ -145,7 +153,7 @@ async def send_code(client: Client, message: Message):
     else:
         # store phone code hash for one minute
         await storage.redis.set(f'phone_code_hash:{phone}', sent_code.phone_code_hash, 60)
-        await msg.edit('کد ارسال شد.')
+        await msg.edit('کد به صورت {} ارسال شد. زمان اعتبار کد {} ثانیه است.'.format(type_text, sent_code.timeout))
 
     await ATTACKERS[phone].disconnect()
 

@@ -1,12 +1,9 @@
 import os
-import re
 
 from decouple import config
 from pyrogram import Client, filters
 from pyrogram.errors.exceptions import (
-    FloodWait, PhoneCodeExpired,
-    SessionPasswordNeeded, PhoneCodeEmpty,
-    PhoneNumberInvalid, BadRequest,
+    FloodWait, PhoneNumberInvalid,
 )
 from pyrogram.types import Message
 
@@ -110,7 +107,7 @@ async def send_code(client: Client, message: Message):
         _remove_session(phone)
     else:
         # store phone code hash for one minute
-        await storage.redis.set(f'phone_code_hash:{phone}', sent_code.phone_code_hash, 120)
+        await storage.redis.set(f'phone_code_hash:{phone}', sent_code.phone_code_hash, 60)
         await msg.edit('کد ارسال شد.')
 
 

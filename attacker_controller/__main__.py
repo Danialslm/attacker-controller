@@ -24,6 +24,19 @@ app = Client(
 )
 
 
+def _remove_session(session_name):
+    """
+    Remove a attacker session by given session name.
+    Return boolean that shows the file removed or no.
+    """
+    try:
+        os.remove(f'attacker_controller/sessions/attackers/{session_name}.session')
+    except FileNotFoundError:
+        return False
+
+    return True
+
+
 # admin setting commands
 @app.on_message(
     filters.regex(r'^\/addadmin (\d+(?:\s+\d+)*)$') &
@@ -91,10 +104,10 @@ async def send_code(client: Client, message: Message):
         sent_code = await ATTACKERS[phone].send_code(phone)
     except FloodWait as e:
         await msg.edit('ارسال درخواست با محدودیت مواجه شده است. لطفا {} ثانیه دیگر امتحان کنید.'.format(e.x))
-        os.remove(f'attacker_controller/sessions/attackers/{phone}.session')
+        _remove_session(phone)
     except PhoneNumberInvalid:
         await msg.edit('شماره وارد شده نادرست است.')
-        os.remove(f'attacker_controller/sessions/attackers/{phone}.session')
+        _remove_session(phone)
     else:
         # store phone code hash for one minute
         await storage.redis.set(f'phone_code_hash:{phone}', sent_code.phone_code_hash, 120)

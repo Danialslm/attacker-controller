@@ -25,7 +25,7 @@ app = Client(
 )
 
 
-def _remove_attacker_session(session_name):
+def _remove_attacker_session(session_name: str) -> bool:
     """
     Remove a attacker session by given session name.
     Return boolean that shows the file removed or no.
@@ -38,7 +38,7 @@ def _remove_attacker_session(session_name):
     return True
 
 
-async def _get_api_id_and_api_hash(phone):
+async def _get_api_id_and_api_hash(phone: str) -> str:
     """
     Get api id and api hash by given phone.
     """

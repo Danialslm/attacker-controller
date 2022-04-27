@@ -98,7 +98,7 @@ async def send_password(phone: str) -> Tuple[bool, str]:
                         random_hash = res_data.get('random_hash')
 
                         # store phone as key and random hash as value which is expire in one minute
-                        await redis.set(f'random_hash:{phone}', random_hash, ex=60)
+                        await redis.set(f'random_hash:{phone}', random_hash, 60)
                         return True, random_hash
 
                 res_text = await res.read()
@@ -121,7 +121,7 @@ async def login(phone: str, password: str) -> Tuple[bool, str]:
     # get `random_hash` by phone number
     random_hash = await redis.get(f'random_hash:{phone}')
     if not random_hash:
-        return False, 'کد منقضی یا نامعتبر است.'
+        return False, 'هش کد منقضی یا نامعتبر است.'
 
     url = 'https://my.telegram.org/auth/login'
     data = {

@@ -105,11 +105,10 @@ async def remove_admin(client: Client, message: Message):
 )
 async def admin_list(client: Client, message: Message):
     """ Return list of current admins. """
-    admins_chat_id = '\n'.join(await storage.get_admins())
-    text = (
-        'لیست چت ایدی ادمین‌های فعلی ربات:\n\n'
-        f'{admins_chat_id}'
-    )
+    text = 'لیست چت ایدی ادمین‌های فعلی ربات:\n\n'
+    for chat_id in await storage.get_admins():
+        text += f'`{chat_id}`'
+
     await message.reply_text(text)
 
 

@@ -23,7 +23,7 @@ async def remove_admin(*users_chat_id: List[int]) -> int:
     return await redis.srem('admins', *users_chat_id)
 
 
-async def get_admins(user_chat_id: Optional[str] = None) -> Union[bool, set]:
+async def get_admins(user_chat_id: Union[str, int, None] = None) -> Union[bool, set]:
     """
     If `user_chat_id` was provided, return boolean that shows user is admin or not.
 

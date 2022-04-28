@@ -8,7 +8,10 @@ from pyrogram.errors.exceptions import (
     PhoneNumberInvalid, BadRequest,
     PasswordHashInvalid,
 )
-from pyrogram.types import Message, SentCode
+from pyrogram.types import (
+    InlineKeyboardButton, InlineKeyboardMarkup,
+    Message, SentCode, CallbackQuery,
+)
 
 from attacker_controller import MAIN_ADMINS
 from attacker_controller.utils import storage, auth
@@ -233,6 +236,52 @@ async def remove_attacker(client: Client, message: Message):
     await storage.remove_attacker(phone)
     _remove_attacker_session(phone)
     await message.reply_text('شماره داده شده از لیست اتکر‌ها حذف شد.')
+
+
+# edit attacker profile commands
+@app.on_message(
+    filters.regex(r'^\/edit (\+\d+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
+async def edit(client: Client, message: Message):
+    """
+    Start editing attacker profile.
+    """
+    phone = message.matches[0].group(1)
+    attacker = await storage.get_attackers(phone)
+    if not attacker:
+        await message.reply_text('اتکری با این شماره موبایل وجود ندارد.')
+        return
+
+    ATTACKERS[phone] = Client(
+        f'attacker_controller/sessions/attackers/{phone}',
+        api_id=attacker['api_id'],
+        api_hash=attacker['api_hash'],
+    )
+    await ATTACKERS[phone].connect()
+
+    keyboard = [
+        [
+            InlineKeyboardButton('تغییر نام کوچک', callback_data=f'edit_first_name'),
+            InlineKeyboardButton('تغییر نام کوچک', callback_data=f'edit_last_name'),
+        ],
+        [
+            InlineKeyboardButton('تغییر نام کاربری', callback_data=f'edit_username'),
+            InlineKeyboardButton('تغییر عکس پروفایل', callback_data=f'edit_profile'),
+        ],
+        [InlineKeyboardButton('پایان', callback_data=f'edit_finished')],
+    ]
+
+    await message.reply_text('درحال تغییر پروفایل اتکر {}'.format(phone), reply_markup=InlineKeyboardMarkup(keyboard))
+
+
+@app.on_callback_query()
+async def edit_callback_handler(client: Client, callback_query: CallbackQuery):
+    data = callback_query.data
+    if data == 'edit_finished':
+        await callback_query.message.edit('فرایند تغییر پروفایل پایان یافت.')
 
 
 app.run()

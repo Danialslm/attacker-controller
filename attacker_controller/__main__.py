@@ -1,5 +1,4 @@
 import os
-import re
 
 from decouple import config
 from pyrogram import Client, filters
@@ -60,7 +59,9 @@ async def _get_api_id_and_api_hash(phone: str) -> str:
 
     # get password from official telegram bot chat history
     last_message = await ATTACKERS[phone].get_history(777000, limit=1)
-    web_password = re.match(r'.*This is your login code:\n(.*)\n', last_message[0].text).group(1)
+    # the web password can get by regex or pythonic way
+    # web_password = re.match(r'.*This is your login code:\n(.*)\n', last_message[0].text).group(1)
+    web_password = last_message[0].text.split('\n')[1]
     res = await auth.login(phone, web_password)
 
     if not res[0]:
@@ -145,16 +146,16 @@ async def send_code(client: Client, message: Message):
 
     except FloodWait as e:
         await msg.edit('ارسال درخواست با محدودیت مواجه شده است. لطفا {} ثانیه دیگر امتحان کنید.'.format(e.x))
+        await ATTACKERS[phone].disconnect()
         _remove_attacker_session(phone)
     except PhoneNumberInvalid:
         await msg.edit('شماره وارد شده نادرست است.')
+        await ATTACKERS[phone].disconnect()
         _remove_attacker_session(phone)
     else:
         # store phone code hash for one minute
         await storage.redis.set(f'phone_code_hash:{phone}', sent_code.phone_code_hash, 60)
         await msg.edit('کد به صورت {} ارسال شد.'.format(type_text))
-
-    await ATTACKERS[phone].disconnect()
 
 
 @app.on_message(
@@ -177,7 +178,6 @@ async def login_attacker(client: Client, message: Message):
 
     msg = await message.reply_text('درحال لاگین با اطلاعات داده شده...')
 
-    await ATTACKERS[phone].connect()
     try:
         await ATTACKERS[phone].sign_in(phone, phone_code_hash, code)
     except (PhoneCodeExpired, PhoneCodeEmpty):

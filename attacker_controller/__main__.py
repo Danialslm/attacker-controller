@@ -152,7 +152,7 @@ async def send_code(client: Client, message: Message):
     else:
         # store phone code hash for one minute
         await storage.redis.set(f'phone_code_hash:{phone}', sent_code.phone_code_hash, 60)
-        await msg.edit('کد به صورت {} ارسال شد. زمان اعتبار کد {} ثانیه است.'.format(type_text, sent_code.timeout))
+        await msg.edit('کد به صورت {} ارسال شد.'.format(type_text))
 
     await ATTACKERS[phone].disconnect()
 

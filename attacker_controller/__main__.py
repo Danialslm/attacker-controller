@@ -354,6 +354,51 @@ async def set_bio_all(client: Client, message: Message):
 
 
 @app.on_message(
+    filters.command('setprofileall') &
+    filters.group &
+    ~filters.edited &
+    filters.reply &
+    admin
+)
+async def set_profile_photo_all(client: Client, message: Message):
+    """
+    Set a profile photo for all attackers.
+    """
+    provided_photo = message.reply_to_message.photo
+    if not provided_photo:
+        await message.reply_text('لطفا روی یک عکس ریپلای بزنید و دستور را بفرستید.')
+        return
+
+    msg = await message.reply_text('درحال تغییر عکس پروفایل اتکر‌ها. لطفا صبر کنید...')
+
+    # download the photo
+    provided_photo = await client.download_media(
+        provided_photo.file_id,
+        file_name='media/profile_photo.jpg',
+    )
+
+    number_of_successes = 0
+    for atk_phone in await storage.get_attackers():
+        attacker = await storage.get_attackers(atk_phone)
+        attacker_cli = Client(
+            f'attacker_controller/sessions/attackers/{atk_phone}',
+            api_id=attacker['api_id'],
+            api_hash=attacker['api_hash'],
+        )
+        await attacker_cli.connect()
+        success = await attacker_cli.set_profile_photo(photo=provided_photo)
+        if success:
+            number_of_successes += 1
+        await attacker_cli.disconnect()
+
+    os.remove('media/profile_photo.jpg')
+    await msg.edit(
+        '{} اتکر عکس پروفایل‌شان تغییر یافت.'.format(number_of_successes),
+        parse_mode='markdown',
+    )
+
+
+@app.on_message(
     filters.regex(r'^\/edit (\+\d+)$') &
     filters.group &
     ~filters.edited &

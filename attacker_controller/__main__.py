@@ -493,4 +493,47 @@ async def set_bio(client: Client, message: Message):
         await msg.edit('مشکلی در تغییر بیو اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
 
 
+@app.on_message(
+    filters.regex(r'^\/setprofile (\+\d+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
+async def set_bio(client: Client, message: Message):
+    """
+    Start profile photo for a specific attacker.
+    """
+    phone = message.matches[0].group(1)
+    attacker = await storage.get_attackers(phone)
+    if not attacker:
+        await message.reply_text('اتکری با این شماره موبایل وجود ندارد.')
+        return
+
+    provided_photo = message.reply_to_message.photo
+    if not provided_photo:
+        await message.reply_text('لطفا روی یک عکس ریپلای بزنید و دستور را بفرستید.')
+        return
+
+    # download the photo
+    provided_photo = await client.download_media(
+        provided_photo.file_id,
+        file_name='media/profile_photo.jpg',
+    )
+
+    msg = await message.reply_text('درحال تغییر عکس پروفایل اتکر {}. لطفا صبر کنید...'.format(phone))
+    attacker_client = Client(
+        f'attacker_controller/sessions/attackers/{phone}',
+        api_id=attacker['api_id'],
+        api_hash=attacker['api_hash'],
+    )
+
+    success = await _update_attacker(attacker_client, 'profile_photo', provided_photo)
+    if success:
+        await msg.edit('اتکر {} عکس پروفایلش اش تغییر یافت.'.format(phone, provided_photo))
+    else:
+        await msg.edit('مشکلی در تغییر عکس پروفایل اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
+
+    os.remove('media/profile_photo.jpg')
+
+
 app.run()

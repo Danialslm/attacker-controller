@@ -2,13 +2,7 @@ import os
 
 from decouple import config
 from pyrogram import Client, filters
-from pyrogram.errors.exceptions import (
-    FloodWait, PhoneCodeExpired,
-    SessionPasswordNeeded, PhoneCodeEmpty,
-    PhoneNumberInvalid, BadRequest,
-    PasswordHashInvalid, UsernameInvalid,
-    UsernameOccupied,
-)
+from pyrogram.errors import exceptions
 from pyrogram.types import (
     Message, SentCode, )
 
@@ -107,7 +101,7 @@ async def _update_attacker(attacker: Client, field: str, value: str) -> bool:
     elif field == 'username':
         try:
             success = await attacker.update_username(value)
-        except (UsernameInvalid, UsernameOccupied):
+        except (exceptions.UsernameInvalid, exceptions.UsernameOccupied):
             success = False
     else:
         success = False
@@ -189,11 +183,11 @@ async def send_code(client: Client, message: Message):
         else:
             type_text = sent_code.type
 
-    except FloodWait as e:
+    except exceptions.FloodWait as e:
         await msg.edit('ارسال درخواست با محدودیت مواجه شده است. لطفا {} ثانیه دیگر امتحان کنید.'.format(e.x))
         await ATTACKERS[phone].disconnect()
         _remove_attacker_session(phone)
-    except PhoneNumberInvalid:
+    except exceptions.PhoneNumberInvalid:
         await msg.edit('شماره وارد شده نادرست است.')
         await ATTACKERS[phone].disconnect()
         _remove_attacker_session(phone)
@@ -225,13 +219,17 @@ async def login_attacker(client: Client, message: Message):
 
     try:
         await ATTACKERS[phone].sign_in(phone, phone_code_hash, code)
-    except (PhoneCodeExpired, PhoneCodeEmpty):
+    except (exceptions.PhoneCodeExpired, exceptions.PhoneCodeEmpty, exceptions.PhoneCodeInvalid):
         await msg.edit('کد منقضی یا اشتباه است.')
-    except SessionPasswordNeeded:
+    except exceptions.PhoneNumberUnoccupied:
+        await msg.edit('شماره تلفن در تلگرام ثبت نشده است.')
+    except exceptions.SignInFailed:
+        await msg.edit('فرایند لاگین به مشکل خورد! لطفا دوباره امتحان کنید.')
+    except exceptions.SessionPasswordNeeded:
         if password is not None:
             try:
                 await ATTACKERS[phone].check_password(password)
-            except (PasswordHashInvalid, BadRequest):
+            except (exceptions.PasswordHashInvalid, exceptions.BadRequest):
                 await msg.edit('پسورد اشتباه است!')
             else:
                 await msg.edit(await _get_api_id_and_api_hash(phone))

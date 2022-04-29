@@ -240,6 +240,40 @@ async def remove_attacker(client: Client, message: Message):
 
 # edit attacker profile commands
 @app.on_message(
+    filters.command('setfirstnameall') &
+    filters.group &
+    ~filters.edited &
+    filters.reply &
+    admin
+)
+async def set_first_name_all(client: Client, message: Message):
+    """
+    Set a first name for all attackers.
+    """
+    msg = await message.reply_text('درحال تغییر پروفایل اتکر‌ها. لطفا صبر کنید...')
+    provided_first_name = message.reply_to_message.text
+
+    number_of_successes = 0
+    for atk_phone in await storage.get_attackers():
+        attacker = await storage.get_attackers(atk_phone)
+        attacker_cli = Client(
+            f'attacker_controller/sessions/attackers/{atk_phone}',
+            api_id=attacker['api_id'],
+            api_hash=attacker['api_hash'],
+        )
+        await attacker_cli.connect()
+        success = await attacker_cli.update_profile(first_name=provided_first_name)
+        if success:
+            number_of_successes += 1
+        await attacker_cli.disconnect()
+
+    await msg.edit(
+        '{} اتکر نام کوچک‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_first_name),
+        parse_mode='markdown',
+    )
+
+
+@app.on_message(
     filters.regex(r'^\/edit (\+\d+)$') &
     filters.group &
     ~filters.edited &

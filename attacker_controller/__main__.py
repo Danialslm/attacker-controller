@@ -423,4 +423,39 @@ async def set_first_name(client: Client, message: Message):
         await msg.edit('مشکلی در تغییر نام کوچک اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
 
 
+@app.on_message(
+    filters.regex(r'^\/setlastname (\+\d+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
+async def set_last_name(client: Client, message: Message):
+    """
+    Start last name for a specific attacker.
+    """
+    phone = message.matches[0].group(1)
+    attacker = await storage.get_attackers(phone)
+    if not attacker:
+        await message.reply_text('اتکری با این شماره موبایل وجود ندارد.')
+        return
+
+    provided_last_name = message.reply_to_message.text
+    if not provided_last_name:
+        await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
+        return
+
+    msg = await message.reply_text('درحال تغییر نام خانوادگی اتکر {}. لطفا صبر کنید...'.format(phone))
+    attacker_client = Client(
+        f'attacker_controller/sessions/attackers/{phone}',
+        api_id=attacker['api_id'],
+        api_hash=attacker['api_hash'],
+    )
+
+    success = await _update_attacker(attacker_client, 'last_name', provided_last_name)
+    if success:
+        await msg.edit('اتکر {} نام خانوادگی اش به **{}** تغییر یافت.'.format(phone, provided_last_name))
+    else:
+        await msg.edit('مشکلی در تغییر نام خانوادگی اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
+
+
 app.run()

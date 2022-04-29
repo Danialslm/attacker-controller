@@ -74,6 +74,46 @@ async def _get_api_id_and_api_hash(phone: str) -> str:
         return 'فرایند به اتمام رسید و {}'.format(res[1])
 
 
+async def _update_all_attackers(field: str, value: str) -> int:
+    """
+    Update all attackers in ATTACKERS variable.
+    Return number of succeed update.
+    """
+    number_of_successes = 0
+
+    for atk_phone in await storage.get_attackers():
+        attacker = await storage.get_attackers(atk_phone)
+        attacker_client = Client(
+            f'attacker_controller/sessions/attackers/{atk_phone}',
+            api_id=attacker['api_id'],
+            api_hash=attacker['api_hash'],
+        )
+        success = await _update_attacker(attacker_client, field, value)
+        if success:
+            number_of_successes += 1
+
+    return number_of_successes
+
+
+async def _update_attacker(attacker: Client, field: str, value: str) -> bool:
+    """
+    Connect to attacker and update given field.
+    Return True on success.
+    """
+    await attacker.connect()
+    if field in ['first_name', 'last_name', 'bio']:
+        success = await attacker.update_profile(**{field: value})
+    elif field == 'profile_photo':
+        success = await attacker.set_profile_photo(photo=value)
+    elif field == 'username':
+        success = await attacker.update_username(value)
+    else:
+        success = False
+
+    await attacker.disconnect()
+    return success
+
+
 # admin setting commands
 @app.on_message(
     filters.regex(r'^\/addadmin (\d+(?:\s+\d+)*)$') &
@@ -257,19 +297,7 @@ async def set_first_name_all(client: Client, message: Message):
 
     msg = await message.reply_text('درحال تغییر نام کوچک اتکر‌ها. لطفا صبر کنید...')
 
-    number_of_successes = 0
-    for atk_phone in await storage.get_attackers():
-        attacker = await storage.get_attackers(atk_phone)
-        attacker_cli = Client(
-            f'attacker_controller/sessions/attackers/{atk_phone}',
-            api_id=attacker['api_id'],
-            api_hash=attacker['api_hash'],
-        )
-        await attacker_cli.connect()
-        success = await attacker_cli.update_profile(first_name=provided_first_name)
-        if success:
-            number_of_successes += 1
-        await attacker_cli.disconnect()
+    number_of_successes = await _update_all_attackers('first_name', provided_first_name)
 
     await msg.edit(
         '{} اتکر نام کوچک‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_first_name),
@@ -295,19 +323,7 @@ async def set_last_name_all(client: Client, message: Message):
 
     msg = await message.reply_text('درحال تغییر نام خانوادگی اتکر‌ها. لطفا صبر کنید...')
 
-    number_of_successes = 0
-    for atk_phone in await storage.get_attackers():
-        attacker = await storage.get_attackers(atk_phone)
-        attacker_cli = Client(
-            f'attacker_controller/sessions/attackers/{atk_phone}',
-            api_id=attacker['api_id'],
-            api_hash=attacker['api_hash'],
-        )
-        await attacker_cli.connect()
-        success = await attacker_cli.update_profile(last_name=provided_last_name)
-        if success:
-            number_of_successes += 1
-        await attacker_cli.disconnect()
+    number_of_successes = await _update_all_attackers('last_name', provided_last_name)
 
     await msg.edit(
         '{} اتکر نام خانوادگی‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_last_name),
@@ -333,19 +349,7 @@ async def set_bio_all(client: Client, message: Message):
 
     msg = await message.reply_text('درحال تغییر بیو اتکر‌ها. لطفا صبر کنید...')
 
-    number_of_successes = 0
-    for atk_phone in await storage.get_attackers():
-        attacker = await storage.get_attackers(atk_phone)
-        attacker_cli = Client(
-            f'attacker_controller/sessions/attackers/{atk_phone}',
-            api_id=attacker['api_id'],
-            api_hash=attacker['api_hash'],
-        )
-        await attacker_cli.connect()
-        success = await attacker_cli.update_profile(bio=provided_bio)
-        if success:
-            number_of_successes += 1
-        await attacker_cli.disconnect()
+    number_of_successes = await _update_all_attackers('bio', provided_bio)
 
     await msg.edit(
         '{} اتکر بیو‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_bio),
@@ -377,19 +381,7 @@ async def set_profile_photo_all(client: Client, message: Message):
         file_name='media/profile_photo.jpg',
     )
 
-    number_of_successes = 0
-    for atk_phone in await storage.get_attackers():
-        attacker = await storage.get_attackers(atk_phone)
-        attacker_cli = Client(
-            f'attacker_controller/sessions/attackers/{atk_phone}',
-            api_id=attacker['api_id'],
-            api_hash=attacker['api_hash'],
-        )
-        await attacker_cli.connect()
-        success = await attacker_cli.set_profile_photo(photo=provided_photo)
-        if success:
-            number_of_successes += 1
-        await attacker_cli.disconnect()
+    number_of_successes = await _update_all_attackers('profile_photo', provided_photo)
 
     os.remove('media/profile_photo.jpg')
     await msg.edit(

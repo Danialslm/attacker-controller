@@ -6,7 +6,8 @@ from pyrogram.errors.exceptions import (
     FloodWait, PhoneCodeExpired,
     SessionPasswordNeeded, PhoneCodeEmpty,
     PhoneNumberInvalid, BadRequest,
-    PasswordHashInvalid,
+    PasswordHashInvalid, UsernameInvalid,
+    UsernameOccupied,
 )
 from pyrogram.types import (
     Message, SentCode, )
@@ -104,7 +105,10 @@ async def _update_attacker(attacker: Client, field: str, value: str) -> bool:
     elif field == 'profile_photo':
         success = await attacker.set_profile_photo(photo=value)
     elif field == 'username':
-        success = await attacker.update_username(value)
+        try:
+            success = await attacker.update_username(value)
+        except (UsernameInvalid, UsernameOccupied):
+            success = False
     else:
         success = False
 
@@ -534,6 +538,46 @@ async def set_bio(client: Client, message: Message):
         await msg.edit('مشکلی در تغییر عکس پروفایل اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
 
     os.remove('media/profile_photo.jpg')
+
+
+@app.on_message(
+    filters.regex(r'^\/setusername (\+\d+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
+async def set_username(client: Client, message: Message):
+    """
+    Start username for a specific attacker.
+    """
+    phone = message.matches[0].group(1)
+    attacker = await storage.get_attackers(phone)
+    if not attacker:
+        await message.reply_text('اتکری با این شماره موبایل وجود ندارد.')
+        return
+
+    provided_username = message.reply_to_message.text
+    if not provided_username:
+        await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
+        return
+
+    msg = await message.reply_text('درحال تغییر نام کاربری اتکر {}. لطفا صبر کنید...'.format(phone))
+    attacker_client = Client(
+        f'attacker_controller/sessions/attackers/{phone}',
+        api_id=attacker['api_id'],
+        api_hash=attacker['api_hash'],
+    )
+
+    success = await _update_attacker(attacker_client, 'username', provided_username)
+    if success:
+
+        await msg.edit('اتکر {} نام کاربری اش به **{}** تغییر یافت.'.format(phone, provided_username))
+    else:
+        await msg.edit(
+            'مشکلی در تغییر نام کاربری اتکر {} به وجود آمد.\n'
+            'ممکن است این نام کاربری از قبل رزرو شده باشد.\n'
+            'همچنین توجه کنید که نام کاربری معتبر است.'.format(phone),
+        )
 
 
 app.run()

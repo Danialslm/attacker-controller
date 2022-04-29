@@ -250,7 +250,7 @@ async def set_first_name_all(client: Client, message: Message):
     """
     Set a first name for all attackers.
     """
-    msg = await message.reply_text('درحال تغییر پروفایل اتکر‌ها. لطفا صبر کنید...')
+    msg = await message.reply_text('درحال تغییر نام کوچک اتکر‌ها. لطفا صبر کنید...')
     provided_first_name = message.reply_to_message.text
 
     number_of_successes = 0
@@ -284,7 +284,7 @@ async def set_last_name_all(client: Client, message: Message):
     """
     Set a last name for all attackers.
     """
-    msg = await message.reply_text('درحال تغییر پروفایل اتکر‌ها. لطفا صبر کنید...')
+    msg = await message.reply_text('درحال تغییر نام خانوادگی اتکر‌ها. لطفا صبر کنید...')
     provided_last_name = message.reply_to_message.text
 
     number_of_successes = 0
@@ -318,7 +318,7 @@ async def set_bio_all(client: Client, message: Message):
     """
     Set a bio for all attackers.
     """
-    msg = await message.reply_text('درحال تغییر پروفایل اتکر‌ها. لطفا صبر کنید...')
+    msg = await message.reply_text('درحال تغییر بیو اتکر‌ها. لطفا صبر کنید...')
     provided_bio = message.reply_to_message.text
 
     number_of_successes = 0

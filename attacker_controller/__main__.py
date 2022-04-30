@@ -3,8 +3,7 @@ import os
 from decouple import config
 from pyrogram import Client, filters
 from pyrogram.errors import exceptions
-from pyrogram.types import (
-    Message, SentCode, )
+from pyrogram.types import Message, SentCode
 
 from attacker_controller import MAIN_ADMINS
 from attacker_controller.utils import storage, auth
@@ -580,6 +579,59 @@ async def set_username(client: Client, message: Message):
             'ممکن است این نام کاربری از قبل رزرو شده باشد.\n'
             'همچنین توجه کنید که نام کاربری معتبر است.'.format(phone),
         )
+
+
+@app.on_message(
+    filters.regex(r'^\/members (\+\d+) @?(.*) (\d+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
+async def get_group_members(client: Client, message: Message):
+    """
+    Get list of group members.
+    """
+    phone = message.matches[0].group(1)
+    attacker = await storage.get_attackers(phone)
+    if not attacker:
+        await message.reply_text('اتکری با این شماره یافت نشد.')
+        return
+
+    await message.reply_text('درحال گرفتن لیست ممبر های گروه. لطفا صبر کنید...')
+    attacker_client = Client(
+        f'attacker_controller/sessions/attackers/{phone}',
+        api_id=attacker['api_id'],
+        api_hash=attacker['api_hash'],
+    )
+    await attacker_client.connect()
+
+    group_username = message.matches[0].group(2)
+    limit = int(message.matches[0].group(3))
+
+    member_counter = 0
+    text = ''
+    async for member in attacker_client.iter_chat_members(group_username, limit=limit):
+        # don't capture the bots
+        if member.user.is_bot:
+            continue
+
+        member_counter += 1
+        if not member.user.username:
+            text += f'{member_counter} - {member.user.id}\n'
+        else:
+            text += f'{member_counter} - @{member.user.username}\n'
+
+        if member_counter % 50 == 0:
+            await message.reply_text(text)
+            text = ''
+
+    await attacker_client.disconnect()
+
+    # if any members still left
+    if text:
+        await message.reply_text(text)
+
+    await message.reply_text('فرایند گرفتن ممبرهای گروه {} تمام شد.'.format(group_username))
 
 
 app.run()

@@ -146,8 +146,10 @@ async def remove_admin(client: Client, message: Message):
 async def admin_list(client: Client, message: Message):
     """ Return list of current admins. """
     text = 'لیست چت ایدی ادمین‌های فعلی ربات:\n\n'
+    admin_counter = 0
     for chat_id in await storage.get_admins():
-        text += f'`{chat_id}`'
+        admin_counter += 1
+        text += f'{admin_counter} - `{chat_id}`\n'
 
     await message.reply_text(text)
 
@@ -257,8 +259,10 @@ async def attacker_list(client: Client, message: Message):
     """
     text = 'لیست اتکرها : \n\n'
     attackers = await storage.get_attackers()
+    attacker_counter = 0
     for attacker in attackers:
-        text += '`{}`\n\n'.format(attacker)
+        attacker_counter += 1
+        text += f'{attacker_counter} - `{attacker}`\n'
     await message.reply_text(text)
 
 

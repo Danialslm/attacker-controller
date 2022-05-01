@@ -657,26 +657,31 @@ async def set_banner(client: Client, message: Message):
             banner.animation or banner.voice or
             banner.sticker
     )
-    ext = ''
+    banner_media_ext = ''
     if media:
-        # find file extension
+        # media file extension
         if banner.media == 'photo':
-            ext = 'jpg'
+            banner_media_ext = 'jpg'
         elif banner.media == 'video' or banner.media == 'animation':
-            ext = 'mp4'
+            banner_media_ext = 'mp4'
         elif banner.media == 'voice':
-            ext = 'ogg'
+            banner_media_ext = 'ogg'
         elif banner.media == 'sticker':
-            ext = 'webm'
+            banner_media_ext = 'webm'
             if banner.sticker.is_animated:
-                ext = 'tgs'
+                banner_media_ext = 'tgs'
 
-        await message.reply_to_message.download(file_name=f'media/banner/banner.{ext}')
+        await message.reply_to_message.download(file_name=f'media/banner/banner.{banner_media_ext}')
 
+    banner_media_type = banner.media or ''
     banner_text = message.reply_to_message.caption or message.reply_to_message.text or ''
 
     # store the banner in cache
-    await storage.redis.hset('banner', mapping={'text': banner_text, 'media_ext': ext})
+    await storage.redis.hset('banner', mapping={
+        'text': banner_text,
+        'media_ext': banner_media_ext,
+        'media_type': banner_media_type
+    })
     await message.reply_text('بنر با موفقیت ذخیره شد.')
 
 

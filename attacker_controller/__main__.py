@@ -1,4 +1,5 @@
 import os
+import re
 
 from decouple import config
 from pyrogram import Client, filters
@@ -683,6 +684,69 @@ async def set_banner(client: Client, message: Message):
         'media_type': banner_media_type
     })
     await message.reply_text('بنر با موفقیت ذخیره شد.')
+
+
+@app.on_message(
+    filters.regex(r'^\/attack (\+\d+)$') &
+    filters.group &
+    ~filters.edited &
+    filters.reply &
+    admin
+)
+async def attack(client: Client, message: Message):
+    """
+    Attack to a list of users or groups.
+    """
+    phone = message.matches[0].group(1)
+
+    # get usernames and ids from replied text
+    targets = re.findall(r'(?<=@)\w{5,}|\d{6,}', message.reply_to_message.text)
+
+    if not targets:
+        return
+
+    msg = await message.reply_text('درحال اتک به لیست با شماره {}. لطفا صبر کنید...'.format(phone))
+
+    attacker = await storage.get_attackers(phone)
+    banner = await storage.redis.hgetall('banner')
+
+    # sending method based on media type
+    if banner['media_type'] == 'photo':
+        method = 'send_photo'
+    elif banner['media_type'] == 'video':
+        method = 'send_video'
+    elif banner['media_type'] == 'animation':
+        method = 'send_animation'
+    elif banner['media_type'] == 'voice':
+        method = 'send_voice'
+    elif banner['media_type'] == 'sticker':
+        method = 'send_sticker'
+    else:
+        method = 'send_message'
+
+    attacker_client = Client(
+        f'attacker_controller/sessions/attackers/{phone}',
+        api_id=attacker['api_id'],
+        api_hash=attacker['api_hash'],
+    )
+    await attacker_client.connect()
+
+    number_of_successes = 0
+    try:
+        for target in targets:
+            send = getattr(attacker_client, method)
+
+            if banner['media_type']:
+                await send(target, f'media/banner/banner.{banner["media_ext"]}', banner['text'])
+            else:
+                await send(target, banner['text'])
+
+            number_of_successes += 1
+
+    finally:
+        await attacker_client.disconnect()
+
+    await msg.edit('اتک تمام شد. تعداد موفقیت ها {}.'.format(number_of_successes))
 
 
 app.run()

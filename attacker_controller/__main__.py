@@ -634,4 +634,50 @@ async def get_group_members(client: Client, message: Message):
     await message.reply_text('فرایند گرفتن ممبرهای گروه {} تمام شد.'.format(group_username))
 
 
+@app.on_message(
+    filters.command('setbanner') &
+    filters.group &
+    ~filters.edited &
+    filters.reply &
+    admin
+)
+async def set_banner(client: Client, message: Message):
+    """
+    Set a new banner.
+    """
+    # remove previous banner file
+    for _, __, files in os.walk('media/banner'):
+        for file in files:
+            os.remove(f'media/banner/{file}')
+
+    banner = message.reply_to_message
+    # get and save media if message has
+    media = (
+            banner.photo or banner.video or
+            banner.animation or banner.voice or
+            banner.sticker
+    )
+    ext = ''
+    if media:
+        # find file extension
+        if banner.media == 'photo':
+            ext = 'jpg'
+        elif banner.media == 'video' or banner.media == 'animation':
+            ext = 'mp4'
+        elif banner.media == 'voice':
+            ext = 'ogg'
+        elif banner.media == 'sticker':
+            ext = 'webm'
+            if banner.sticker.is_animated:
+                ext = 'tgs'
+
+        await message.reply_to_message.download(file_name=f'media/banner/banner.{ext}')
+
+    banner_text = message.reply_to_message.caption or message.reply_to_message.text or ''
+
+    # store the banner in cache
+    await storage.redis.hset('banner', mapping={'text': banner_text, 'media_ext': ext})
+    await message.reply_text('بنر با موفقیت ذخیره شد.')
+
+
 app.run()

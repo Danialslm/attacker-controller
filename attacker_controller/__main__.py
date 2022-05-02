@@ -57,6 +57,43 @@ async def admin_list(client: Client, message: Message):
     await message.reply_text(text)
 
 
+@app.on_message(
+    filters.command('help') &
+    filters.group &
+    ~filters.edited
+)
+async def help_commands(client: Client, message: Message):
+    """
+    Return the list of available bot commands.
+    """
+    text = """
+`/adminlist` - لیست ادمین های معمولی
+`/addadmin` - اضافه کردن ادمین جدید (جلوش یک چت ایدی یا چند چت ایدی باید باشه)
+`/removeadmin` - حذف کردن ادمین جدید (جلوش یک چت ایدی یا چند چت ایدی باید باشه)
+
+`/sendcode` - ارسال کد لاگین (جلوش شماره باید باشه)
+`/login` - لاگین به اکانت (جلوش شماره و کد و پسورد اگه داشت باید باشه)
+
+`/attackerlist` - لیست اتکر‌ها
+`/removeattacker` - حذف کردن اتکر (جلوش یک یا چند شماره باید باشه)
+
+`/setfirstnameall` - ست کردن نام کوچک برای همه اتکرها
+`/setlastnameall` - ست کردن نام خانوادگی برای همه اتکرها
+`/setbioall` - ست کردن بیو برای همه اتکرها
+`/setprofileall` - ست کردن عکس پروفایل برای همه اتکرها
+
+`/setfirstname` - ست کردن نام کوچک برای یک اتکر (جلوش شماره باید باشه)
+`/setlastname` - ست کردن نام خانوادگی برای یک اتکر (جلوش شماره باید باشه)
+`/setbio` - ست کردن بیو برای یک اتکر (جلوش شماره باید باشه)
+`/setprofile` - ست کردن عکس پروفایل برای یک اتکر (جلوش شماره باید باشه)
+`/setusername` - ست کردن نام کاربری برای یک اتکر (جلوش شماره باید باشه)
+
+`/members` - گرفتن ممبرا (جلوش شماره و ایدی گپ و تعداد ممبرای دریافتی باید باشه)
+`/attack` - اتک (جلوش شماره باید باشه)
+"""
+    await message.reply_text(text)
+
+
 # add handlers
 app.add_handler(handlers.send_code_handler)
 app.add_handler(handlers.login_attacker_handler)

@@ -536,24 +536,11 @@ async def set_banner(client: Client, message: Message):
     await message.reply_text('بنر با موفقیت ذخیره شد.')
 
 
-async def _attack(attacker: Client, target: str, banner: dict):
+async def _attack(attacker: Client, target: str, method, banner: dict):
     """
     Send the banner to target.
-    Return 1 on success.
+    Return True on success.
     """
-    # sending method based on banner media type
-    if banner['media_type'] == 'photo':
-        method = 'send_photo'
-    elif banner['media_type'] == 'video':
-        method = 'send_video'
-    elif banner['media_type'] == 'animation':
-        method = 'send_animation'
-    elif banner['media_type'] == 'voice':
-        method = 'send_voice'
-    elif banner['media_type'] == 'sticker':
-        method = 'send_sticker'
-    else:
-        method = 'send_message'
     send = getattr(attacker, method)
 
     try:
@@ -583,11 +570,24 @@ async def attack(client: Client, message: Message):
     msg = await message.reply_text('درحال اتک به لیست با شماره {}. لطفا صبر کنید...'.format(phone))
 
     banner = await storage.redis.hgetall('banner')
+    # sending method based on banner media type
+    if banner['media_type'] == 'photo':
+        method = 'send_photo'
+    elif banner['media_type'] == 'video':
+        method = 'send_video'
+    elif banner['media_type'] == 'animation':
+        method = 'send_animation'
+    elif banner['media_type'] == 'voice':
+        method = 'send_voice'
+    elif banner['media_type'] == 'sticker':
+        method = 'send_sticker'
+    else:
+        method = 'send_message'
 
     try:
         async with Attacker(phone) as attacker:
             attacks = [
-                asyncio.create_task(_attack(attacker, target, banner))
+                asyncio.create_task(_attack(attacker, target, method, banner))
                 for target in targets
             ]
             successes = sum(await asyncio.gather(*attacks))

@@ -551,11 +551,11 @@ async def _attack(attacker: Client, target: str, banner: dict):
             await send(target, f'media/banner/banner.{banner["media_ext"]}', banner['text'])
         else:
             await send(target, banner['text'])
-        return 1
+        return True
     except Exception as e:
         # todo: improve exception handling
         print(e)
-        return 0
+        return False
 
 
 async def attack(client: Client, message: Message):

@@ -1,3 +1,4 @@
+import asyncio
 import os
 import re
 
@@ -535,6 +536,38 @@ async def set_banner(client: Client, message: Message):
     await message.reply_text('بنر با موفقیت ذخیره شد.')
 
 
+async def _attack(attacker: Client, target: str, banner: dict):
+    """
+    Send the banner to target.
+    Return 1 on success.
+    """
+    # sending method based on banner media type
+    if banner['media_type'] == 'photo':
+        method = 'send_photo'
+    elif banner['media_type'] == 'video':
+        method = 'send_video'
+    elif banner['media_type'] == 'animation':
+        method = 'send_animation'
+    elif banner['media_type'] == 'voice':
+        method = 'send_voice'
+    elif banner['media_type'] == 'sticker':
+        method = 'send_sticker'
+    else:
+        method = 'send_message'
+    send = getattr(attacker, method)
+
+    try:
+        if banner['media_type']:
+            await send(target, f'media/banner/banner.{banner["media_ext"]}', banner['text'])
+        else:
+            await send(target, banner['text'])
+        return 1
+    except Exception as e:
+        # todo: improve exception handling
+        print(e)
+        return 0
+
+
 async def attack(client: Client, message: Message):
     """
     Attack to a list of users or groups.
@@ -552,20 +585,6 @@ async def attack(client: Client, message: Message):
     attacker = await storage.get_attackers(phone)
     banner = await storage.redis.hgetall('banner')
 
-    # sending method based on media type
-    if banner['media_type'] == 'photo':
-        method = 'send_photo'
-    elif banner['media_type'] == 'video':
-        method = 'send_video'
-    elif banner['media_type'] == 'animation':
-        method = 'send_animation'
-    elif banner['media_type'] == 'voice':
-        method = 'send_voice'
-    elif banner['media_type'] == 'sticker':
-        method = 'send_sticker'
-    else:
-        method = 'send_message'
-
     attacker_client = Client(
         f'attacker_controller/sessions/attackers/{phone}',
         api_id=attacker['api_id'],
@@ -573,19 +592,12 @@ async def attack(client: Client, message: Message):
     )
     await attacker_client.connect()
 
-    number_of_successes = 0
-    try:
-        for target in targets:
-            send = getattr(attacker_client, method)
+    attacks = [
+        asyncio.create_task(_attack(attacker_client, target, banner))
+        for target in targets
+    ]
+    successes = sum(await asyncio.gather(*attacks))
 
-            if banner['media_type']:
-                await send(target, f'media/banner/banner.{banner["media_ext"]}', banner['text'])
-            else:
-                await send(target, banner['text'])
+    await attacker_client.disconnect()
 
-            number_of_successes += 1
-
-    finally:
-        await attacker_client.disconnect()
-
-    await msg.edit('اتک تمام شد. تعداد موفقیت ها {}.'.format(number_of_successes))
+    await msg.edit('اتک تمام شد. تعداد موفقیت ها {}.'.format(successes))

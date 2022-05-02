@@ -8,6 +8,7 @@ from pyrogram import Client
 from pyrogram.errors import exceptions
 from pyrogram.types import Message, SentCode
 
+from attacker_controller import logger
 from attacker_controller.utils import storage, auth
 
 LOGGING_ATTACKER: Union[Client, None] = None
@@ -555,8 +556,7 @@ async def _attack(attacker: Client, target: str, method, banner: dict):
             await send(target, banner['text'])
         return True
     except Exception as e:
-        # todo: improve exception handling
-        print(e)
+        logger.error(e.message)
         return False
 
 

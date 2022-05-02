@@ -38,9 +38,7 @@ async def _create_application(
     }
 
     async with session.post(url, data=data, headers=headers) as res:
-        # todo: complete this section
-        print(await res.read())
-        print(res.status)
+        pass
 
 
 async def _get_api_id_and_api_hash(session: ClientSession, stel_token: str) -> Tuple[str, str]:

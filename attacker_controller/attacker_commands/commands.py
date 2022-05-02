@@ -14,6 +14,7 @@ ATTACKERS = {}
 
 class AttackerNotFound(Exception):
     """ Attacker with provided phone number doesn't exist. """
+
     def __init__(self):
         self.message = 'اتکری با این شماره یافت نشد.'
         super().__init__(self.message)
@@ -94,35 +95,33 @@ async def _get_api_id_and_api_hash(phone: str) -> str:
 async def _update_all_attackers(field: str, value: str) -> int:
     """
     Update all available attackers.
-    Return number of succeed update.
+    Return the successes number.
     """
-    number_of_successes = 0
-
-    for atk_phone in await storage.get_attackers():
-        async with Attacker(atk_phone) as attacker:
-            success = await _update_attacker(attacker, field, value)
-            if success:
-                number_of_successes += 1
-
-    return number_of_successes
+    updates = [
+        asyncio.create_task(_update_attacker(atk_phone, field, value))
+        for atk_phone in await storage.get_attackers()
+    ]
+    successes = sum(await asyncio.gather(*updates))
+    return successes
 
 
-async def _update_attacker(attacker: Client, field: str, value: str) -> bool:
+async def _update_attacker(phone: str, field: str, value: str) -> bool:
     """
     Connect to attacker and update it by given field and value.
     Return True on success.
     """
-    if field in ['first_name', 'last_name', 'bio']:
-        success = await attacker.update_profile(**{field: value})
-    elif field == 'profile_photo':
-        success = await attacker.set_profile_photo(photo=value)
-    elif field == 'username':
-        try:
-            success = await attacker.update_username(value)
-        except (exceptions.UsernameInvalid, exceptions.UsernameOccupied):
+    async with Attacker(phone) as attacker:
+        if field in ['first_name', 'last_name', 'bio']:
+            success = await attacker.update_profile(**{field: value})
+        elif field == 'profile_photo':
+            success = await attacker.set_profile_photo(photo=value)
+        elif field == 'username':
+            try:
+                success = await attacker.update_username(value)
+            except (exceptions.UsernameInvalid, exceptions.UsernameOccupied):
+                success = False
+        else:
             success = False
-    else:
-        success = False
 
     return success
 
@@ -326,8 +325,7 @@ async def set_first_name(client: Client, message: Message):
     msg = await message.reply_text('درحال تغییر نام کوچک اتکر {}. لطفا صبر کنید...'.format(phone))
 
     try:
-        async with Attacker(phone) as attacker:
-            success = await _update_attacker(attacker, 'first_name', provided_first_name)
+        success = await _update_attacker(phone, 'first_name', provided_first_name)
     except AttackerNotFound as e:
         await msg.edit(e.message)
     else:
@@ -351,8 +349,7 @@ async def set_last_name(client: Client, message: Message):
     msg = await message.reply_text('درحال تغییر نام خانوادگی اتکر {}. لطفا صبر کنید...'.format(phone))
 
     try:
-        async with Attacker(phone) as attacker:
-            success = await _update_attacker(attacker, 'last_name', provided_last_name)
+        success = await _update_attacker(phone, 'last_name', provided_last_name)
     except AttackerNotFound as e:
         await msg.edit(e.message)
     else:
@@ -376,8 +373,7 @@ async def set_bio(client: Client, message: Message):
     msg = await message.reply_text('درحال تغییر بیو اتکر {}. لطفا صبر کنید...'.format(phone))
 
     try:
-        async with Attacker(phone) as attacker:
-            success = await _update_attacker(attacker, 'bio', provided_bio)
+        success = await _update_attacker(phone, 'bio', provided_bio)
     except AttackerNotFound as e:
         await msg.edit(e.message)
     else:
@@ -407,8 +403,7 @@ async def set_profile_photo(client: Client, message: Message):
     msg = await message.reply_text('درحال تغییر عکس پروفایل اتکر {}. لطفا صبر کنید...'.format(phone))
 
     try:
-        async with Attacker(phone) as attacker:
-            success = await _update_attacker(attacker, 'profile_photo', provided_photo)
+        success = await _update_attacker(phone, 'profile_photo', provided_photo)
     except AttackerNotFound as e:
         await msg.edit(e.message)
     else:
@@ -434,8 +429,7 @@ async def set_username(client: Client, message: Message):
     msg = await message.reply_text('درحال تغییر نام کاربری اتکر {}. لطفا صبر کنید...'.format(phone))
 
     try:
-        async with Attacker(phone) as attacker:
-            success = await _update_attacker(attacker, 'username', provided_username)
+        success = await _update_attacker(phone, 'username', provided_username)
     except AttackerNotFound as e:
         await msg.edit(e.message)
     else:

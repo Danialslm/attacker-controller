@@ -12,6 +12,38 @@ from attacker_controller.utils import storage, auth
 ATTACKERS = {}
 
 
+class AttackerNotFound(Exception):
+    """ Attacker with provided phone number doesn't exist. """
+    def __init__(self):
+        self.message = 'اتکری با این شماره یافت نشد.'
+        super().__init__(self.message)
+
+
+class Attacker:
+    """
+    Simple context manager which connect and disconnect to given attacker phone.
+    """
+
+    def __init__(self, phone):
+        self.phone = phone
+
+    async def __aenter__(self):
+        attacker_info = await storage.get_attackers(self.phone)
+        if not attacker_info:
+            raise AttackerNotFound
+
+        self.attacker = Client(
+            f'attacker_controller/sessions/attackers/{self.phone}',
+            api_id=attacker_info['api_id'],
+            api_hash=attacker_info['api_hash'],
+        )
+        await self.attacker.connect()
+        return self.attacker
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.attacker.disconnect()
+
+
 def _remove_attacker_session(session_name: str) -> bool:
     """
     Remove a attacker session by given session name.
@@ -67,15 +99,10 @@ async def _update_all_attackers(field: str, value: str) -> int:
     number_of_successes = 0
 
     for atk_phone in await storage.get_attackers():
-        attacker = await storage.get_attackers(atk_phone)
-        attacker_client = Client(
-            f'attacker_controller/sessions/attackers/{atk_phone}',
-            api_id=attacker['api_id'],
-            api_hash=attacker['api_hash'],
-        )
-        success = await _update_attacker(attacker_client, field, value)
-        if success:
-            number_of_successes += 1
+        async with Attacker(atk_phone) as attacker:
+            success = await _update_attacker(attacker, field, value)
+            if success:
+                number_of_successes += 1
 
     return number_of_successes
 
@@ -85,7 +112,6 @@ async def _update_attacker(attacker: Client, field: str, value: str) -> bool:
     Connect to attacker and update it by given field and value.
     Return True on success.
     """
-    await attacker.connect()
     if field in ['first_name', 'last_name', 'bio']:
         success = await attacker.update_profile(**{field: value})
     elif field == 'profile_photo':
@@ -98,7 +124,6 @@ async def _update_attacker(attacker: Client, field: str, value: str) -> bool:
     else:
         success = False
 
-    await attacker.disconnect()
     return success
 
 
@@ -292,10 +317,6 @@ async def set_first_name(client: Client, message: Message):
     Start first name for a specific attacker.
     """
     phone = message.matches[0].group(1)
-    attacker = await storage.get_attackers(phone)
-    if not attacker:
-        await message.reply_text('اتکری با این شماره موبایل وجود ندارد.')
-        return
 
     provided_first_name = message.reply_to_message.text
     if not provided_first_name:
@@ -303,17 +324,17 @@ async def set_first_name(client: Client, message: Message):
         return
 
     msg = await message.reply_text('درحال تغییر نام کوچک اتکر {}. لطفا صبر کنید...'.format(phone))
-    attacker_client = Client(
-        f'attacker_controller/sessions/attackers/{phone}',
-        api_id=attacker['api_id'],
-        api_hash=attacker['api_hash'],
-    )
 
-    success = await _update_attacker(attacker_client, 'first_name', provided_first_name)
-    if success:
-        await msg.edit('اتکر {} نام کوچکش به **{}** تغییر یافت.'.format(phone, provided_first_name))
+    try:
+        async with Attacker(phone) as attacker:
+            success = await _update_attacker(attacker, 'first_name', provided_first_name)
+    except AttackerNotFound as e:
+        await msg.edit(e.message)
     else:
-        await msg.edit('مشکلی در تغییر نام کوچک اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
+        if success:
+            await msg.edit('اتکر {} نام کوچکش به **{}** تغییر یافت.'.format(phone, provided_first_name))
+        else:
+            await msg.edit('مشکلی در تغییر نام کوچک اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
 
 
 async def set_last_name(client: Client, message: Message):
@@ -321,10 +342,6 @@ async def set_last_name(client: Client, message: Message):
     Start last name for a specific attacker.
     """
     phone = message.matches[0].group(1)
-    attacker = await storage.get_attackers(phone)
-    if not attacker:
-        await message.reply_text('اتکری با این شماره موبایل وجود ندارد.')
-        return
 
     provided_last_name = message.reply_to_message.text
     if not provided_last_name:
@@ -332,17 +349,17 @@ async def set_last_name(client: Client, message: Message):
         return
 
     msg = await message.reply_text('درحال تغییر نام خانوادگی اتکر {}. لطفا صبر کنید...'.format(phone))
-    attacker_client = Client(
-        f'attacker_controller/sessions/attackers/{phone}',
-        api_id=attacker['api_id'],
-        api_hash=attacker['api_hash'],
-    )
 
-    success = await _update_attacker(attacker_client, 'last_name', provided_last_name)
-    if success:
-        await msg.edit('اتکر {} نام خانوادگی اش به **{}** تغییر یافت.'.format(phone, provided_last_name))
+    try:
+        async with Attacker(phone) as attacker:
+            success = await _update_attacker(attacker, 'last_name', provided_last_name)
+    except AttackerNotFound as e:
+        await msg.edit(e.message)
     else:
-        await msg.edit('مشکلی در تغییر نام خانوادگی اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
+        if success:
+            await msg.edit('اتکر {} نام خانوادگی اش به **{}** تغییر یافت.'.format(phone, provided_last_name))
+        else:
+            await msg.edit('مشکلی در تغییر نام خانوادگی اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
 
 
 async def set_bio(client: Client, message: Message):
@@ -350,10 +367,6 @@ async def set_bio(client: Client, message: Message):
     Start bio for a specific attacker.
     """
     phone = message.matches[0].group(1)
-    attacker = await storage.get_attackers(phone)
-    if not attacker:
-        await message.reply_text('اتکری با این شماره موبایل وجود ندارد.')
-        return
 
     provided_bio = message.reply_to_message.text
     if not provided_bio:
@@ -361,17 +374,17 @@ async def set_bio(client: Client, message: Message):
         return
 
     msg = await message.reply_text('درحال تغییر بیو اتکر {}. لطفا صبر کنید...'.format(phone))
-    attacker_client = Client(
-        f'attacker_controller/sessions/attackers/{phone}',
-        api_id=attacker['api_id'],
-        api_hash=attacker['api_hash'],
-    )
 
-    success = await _update_attacker(attacker_client, 'bio', provided_bio)
-    if success:
-        await msg.edit('اتکر {} بیو اش به **{}** تغییر یافت.'.format(phone, provided_bio))
+    try:
+        async with Attacker(phone) as attacker:
+            success = await _update_attacker(attacker, 'bio', provided_bio)
+    except AttackerNotFound as e:
+        await msg.edit(e.message)
     else:
-        await msg.edit('مشکلی در تغییر بیو اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
+        if success:
+            await msg.edit('اتکر {} بیو اش به **{}** تغییر یافت.'.format(phone, provided_bio))
+        else:
+            await msg.edit('مشکلی در تغییر بیو اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
 
 
 async def set_profile_photo(client: Client, message: Message):
@@ -379,10 +392,6 @@ async def set_profile_photo(client: Client, message: Message):
     Start profile photo for a specific attacker.
     """
     phone = message.matches[0].group(1)
-    attacker = await storage.get_attackers(phone)
-    if not attacker:
-        await message.reply_text('اتکری با این شماره موبایل وجود ندارد.')
-        return
 
     provided_photo = message.reply_to_message.photo
     if not provided_photo:
@@ -396,19 +405,19 @@ async def set_profile_photo(client: Client, message: Message):
     )
 
     msg = await message.reply_text('درحال تغییر عکس پروفایل اتکر {}. لطفا صبر کنید...'.format(phone))
-    attacker_client = Client(
-        f'attacker_controller/sessions/attackers/{phone}',
-        api_id=attacker['api_id'],
-        api_hash=attacker['api_hash'],
-    )
 
-    success = await _update_attacker(attacker_client, 'profile_photo', provided_photo)
-    if success:
-        await msg.edit('اتکر {} عکس پروفایلش اش تغییر یافت.'.format(phone, provided_photo))
+    try:
+        async with Attacker(phone) as attacker:
+            success = await _update_attacker(attacker, 'profile_photo', provided_photo)
+    except AttackerNotFound as e:
+        await msg.edit(e.message)
     else:
-        await msg.edit('مشکلی در تغییر عکس پروفایل اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
-
-    os.remove('media/profile_photo.jpg')
+        if success:
+            await msg.edit('اتکر {} عکس پروفایلش اش تغییر یافت.'.format(phone, provided_photo))
+        else:
+            await msg.edit('مشکلی در تغییر عکس پروفایل اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
+    finally:
+        os.remove('media/profile_photo.jpg')
 
 
 async def set_username(client: Client, message: Message):
@@ -416,10 +425,6 @@ async def set_username(client: Client, message: Message):
     Start username for a specific attacker.
     """
     phone = message.matches[0].group(1)
-    attacker = await storage.get_attackers(phone)
-    if not attacker:
-        await message.reply_text('اتکری با این شماره موبایل وجود ندارد.')
-        return
 
     provided_username = message.reply_to_message.text
     if not provided_username:
@@ -427,22 +432,21 @@ async def set_username(client: Client, message: Message):
         return
 
     msg = await message.reply_text('درحال تغییر نام کاربری اتکر {}. لطفا صبر کنید...'.format(phone))
-    attacker_client = Client(
-        f'attacker_controller/sessions/attackers/{phone}',
-        api_id=attacker['api_id'],
-        api_hash=attacker['api_hash'],
-    )
 
-    success = await _update_attacker(attacker_client, 'username', provided_username)
-    if success:
-
-        await msg.edit('اتکر {} نام کاربری اش به **{}** تغییر یافت.'.format(phone, provided_username))
+    try:
+        async with Attacker(phone) as attacker:
+            success = await _update_attacker(attacker, 'username', provided_username)
+    except AttackerNotFound as e:
+        await msg.edit(e.message)
     else:
-        await msg.edit(
-            'مشکلی در تغییر نام کاربری اتکر {} به وجود آمد.\n'
-            'ممکن است این نام کاربری از قبل رزرو شده باشد.\n'
-            'همچنین توجه کنید که نام کاربری معتبر است.'.format(phone),
-        )
+        if success:
+            await msg.edit('اتکر {} نام کاربری اش به **{}** تغییر یافت.'.format(phone, provided_username))
+        else:
+            await msg.edit(
+                'مشکلی در تغییر نام کاربری اتکر {} به وجود آمد.\n'
+                'ممکن است این نام کاربری از قبل رزرو شده باشد.\n'
+                'همچنین توجه کنید که نام کاربری معتبر است.'.format(phone),
+            )
 
 
 async def get_group_members(client: Client, message: Message):
@@ -450,46 +454,38 @@ async def get_group_members(client: Client, message: Message):
     Get list of group members.
     """
     phone = message.matches[0].group(1)
-    attacker = await storage.get_attackers(phone)
-    if not attacker:
-        await message.reply_text('اتکری با این شماره یافت نشد.')
-        return
-
-    await message.reply_text('درحال گرفتن لیست ممبر های گروه. لطفا صبر کنید...')
-    attacker_client = Client(
-        f'attacker_controller/sessions/attackers/{phone}',
-        api_id=attacker['api_id'],
-        api_hash=attacker['api_hash'],
-    )
-    await attacker_client.connect()
 
     group_username = message.matches[0].group(2)
     limit = int(message.matches[0].group(3))
 
+    msg = await message.reply_text('درحال گرفتن لیست ممبر های گروه. لطفا صبر کنید...')
+
     member_counter = 0
     text = ''
-    async for member in attacker_client.iter_chat_members(group_username, limit=limit):
-        # don't capture the bots
-        if member.user.is_bot:
-            continue
+    try:
+        async with Attacker(phone) as attacker:
+            async for member in attacker.iter_chat_members(group_username, limit=limit):
+                # don't capture the bots
+                if member.user.is_bot:
+                    continue
 
-        member_counter += 1
-        if not member.user.username:
-            text += f'{member_counter} - {member.user.id}\n'
-        else:
-            text += f'{member_counter} - @{member.user.username}\n'
+                member_counter += 1
+                if not member.user.username:
+                    text += f'{member_counter} - {member.user.id}\n'
+                else:
+                    text += f'{member_counter} - @{member.user.username}\n'
 
-        if member_counter % 50 == 0:
+                if member_counter % 50 == 0:
+                    await message.reply_text(text)
+                    text = ''
+    except AttackerNotFound as e:
+        await msg.edit(e.message)
+    else:
+        # if any members still left
+        if text:
             await message.reply_text(text)
-            text = ''
 
-    await attacker_client.disconnect()
-
-    # if any members still left
-    if text:
-        await message.reply_text(text)
-
-    await message.reply_text('فرایند گرفتن ممبرهای گروه {} تمام شد.'.format(group_username))
+        await message.reply_text('فرایند گرفتن ممبرهای گروه {} تمام شد.'.format(group_username))
 
 
 async def set_banner(client: Client, message: Message):
@@ -582,22 +578,16 @@ async def attack(client: Client, message: Message):
 
     msg = await message.reply_text('درحال اتک به لیست با شماره {}. لطفا صبر کنید...'.format(phone))
 
-    attacker = await storage.get_attackers(phone)
     banner = await storage.redis.hgetall('banner')
 
-    attacker_client = Client(
-        f'attacker_controller/sessions/attackers/{phone}',
-        api_id=attacker['api_id'],
-        api_hash=attacker['api_hash'],
-    )
-    await attacker_client.connect()
-
-    attacks = [
-        asyncio.create_task(_attack(attacker_client, target, banner))
-        for target in targets
-    ]
-    successes = sum(await asyncio.gather(*attacks))
-
-    await attacker_client.disconnect()
-
-    await msg.edit('اتک تمام شد. تعداد موفقیت ها {}.'.format(successes))
+    try:
+        async with Attacker(phone) as attacker:
+            attacks = [
+                asyncio.create_task(_attack(attacker, target, banner))
+                for target in targets
+            ]
+            successes = sum(await asyncio.gather(*attacks))
+    except AttackerNotFound as e:
+        await msg.edit(e.message)
+    else:
+        await msg.edit('اتک تمام شد. تعداد موفقیت ها {}.'.format(successes))

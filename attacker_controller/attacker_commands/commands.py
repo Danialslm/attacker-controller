@@ -192,10 +192,17 @@ async def login_attacker(client: Client, message: Message):
 
     try:
         await LOGGING_ATTACKER.sign_in(phone, phone_code_hash, code)
-    except (exceptions.PhoneCodeExpired, exceptions.PhoneCodeEmpty, exceptions.PhoneCodeInvalid):
+    except (
+            exceptions.PhoneCodeExpired,
+            exceptions.PhoneCodeEmpty,
+            exceptions.PhoneCodeInvalid,
+    ):
         await msg.edit('کد منقضی یا اشتباه است.')
     except exceptions.PhoneNumberUnoccupied:
         await msg.edit('شماره تلفن در تلگرام ثبت نشده است.')
+        await LOGGING_ATTACKER.disconnect()
+        _remove_attacker_session(phone)
+        LOGGING_ATTACKER = None
     except exceptions.SignInFailed:
         await msg.edit('فرایند لاگین به مشکل خورد! لطفا دوباره امتحان کنید.')
     except exceptions.SessionPasswordNeeded:
@@ -212,8 +219,6 @@ async def login_attacker(client: Client, message: Message):
         await msg.edit(await _web_login(phone))
     finally:
         await storage.redis.delete(f'phone_code_hash:{phone}')
-        await LOGGING_ATTACKER.disconnect()
-        LOGGING_ATTACKER = None
 
 
 async def attacker_list(client: Client, message: Message):

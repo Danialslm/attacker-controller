@@ -459,8 +459,7 @@ async def get_group_members(client: Client, message: Message):
     Get list of group members.
     """
     phone = message.matches[0].group(1)
-
-    group_username = message.matches[0].group(2)
+    group_username = message.matches[0].group(2).replace('https://t.me/', '')
     limit = int(message.matches[0].group(3))
 
     msg = await message.reply_text('درحال گرفتن لیست ممبر های گروه. لطفا صبر کنید...')

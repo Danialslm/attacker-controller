@@ -459,16 +459,31 @@ async def get_group_members(client: Client, message: Message):
     Get list of group members.
     """
     phone = message.matches[0].group(1)
-    group_username = message.matches[0].group(2).replace('https://t.me/', '')
+    group_id = message.matches[0].group(2).replace('https://t.me/', '')
     limit = int(message.matches[0].group(3))
 
     msg = await message.reply_text('درحال گرفتن لیست ممبر های گروه. لطفا صبر کنید...')
+
+    # if the user entered the group chat id, convert it to int
+    if group_id.lstrip('-').isdigit():
+        group_id = int(group_id)
+
+    # only can get groups member
+    try:
+        target_chat = await client.get_chat(group_id)
+    except exceptions.PeerIdInvalid:
+        await msg.edit('ایدی نامعتبر است.')
+        return
+    else:
+        if target_chat.type not in ['group', 'supergroup']:
+            await msg.edit('هدف گروه یا سوپرگروه نیست.')
+            return
 
     member_counter = 0
     text = ''
     try:
         async with Attacker(phone) as attacker:
-            async for member in attacker.iter_chat_members(group_username, limit=limit):
+            async for member in attacker.iter_chat_members(group_id, limit=limit):
                 # don't capture the bots
                 if member.user.is_bot:
                     continue
@@ -489,7 +504,7 @@ async def get_group_members(client: Client, message: Message):
         if text:
             await message.reply_text(text)
 
-        await message.reply_text('فرایند گرفتن ممبرهای گروه {} تمام شد.'.format(group_username))
+        await message.reply_text('فرایند گرفتن ممبرهای گروه {} تمام شد.'.format(group_id))
 
 
 async def set_banner(client: Client, message: Message):

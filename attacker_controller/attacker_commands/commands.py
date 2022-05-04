@@ -543,9 +543,17 @@ async def _attack(attacker: Client, target: str, method, banner: dict):
     Return True on success.
     """
     # if the target chat type was group, join to it
-    target_chat = await attacker.get_chat(target)
-    if target_chat.type in ['supergroup', 'group']:
-        await target_chat.join()
+    try:
+        target_chat = await attacker.get_chat(target)
+    except (
+            exceptions.UsernameInvalid,
+            exceptions.PeerIdInvalid,
+            exceptions.FloodWait,
+    ):
+        return False
+    else:
+        if target_chat.type in ['supergroup', 'group']:
+            await target_chat.join()
 
     send = getattr(attacker, method)
 
@@ -556,7 +564,7 @@ async def _attack(attacker: Client, target: str, method, banner: dict):
             await send(target, banner['text'])
         return True
     except Exception as e:
-        logger.error(e.message)
+        logger.error(e)
         return False
 
 

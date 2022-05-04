@@ -484,8 +484,8 @@ async def get_group_members(client: Client, message: Message):
     try:
         async with Attacker(phone) as attacker:
             async for member in attacker.iter_chat_members(group_id, limit=limit):
-                # don't capture the bots
-                if member.user.is_bot:
+                # don't capture the bots and the users that doesn't have username
+                if member.user.is_bot or not member.user.username:
                     continue
 
                 member_counter += 1

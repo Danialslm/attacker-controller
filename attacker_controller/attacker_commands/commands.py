@@ -560,9 +560,8 @@ async def _attack(attacker: Client, target: str, method, banner: dict):
     try:
         target_chat = await attacker.get_chat(target)
     except (
-            exceptions.UsernameInvalid,
+            exceptions.UsernameNotOccupied,
             exceptions.PeerIdInvalid,
-            exceptions.FloodWait,
     ):
         return False
     else:
@@ -617,8 +616,16 @@ async def attack(client: Client, message: Message):
                 asyncio.create_task(_attack(attacker, target, method, banner))
                 for target in targets
             ]
-            successes = sum(await asyncio.gather(*attacks))
+            results = await asyncio.gather(*attacks, return_exceptions=True)
     except AttackerNotFound as e:
         await msg.edit(e.message)
     else:
-        await msg.edit('اتک تمام شد. تعداد موفقیت ها {}.'.format(successes))
+        successes = 0
+        for result in results:
+            if isinstance(result, bool):
+                successes += result
+            elif isinstance(result, exceptions.FloodWait):
+                await msg.edit('اکانت به مدت {} ثانیه فلود خورد. اتک‌های زده شده {}.'.format(result.x, successes))
+                return
+
+        await msg.edit('اتک تمام شد. تعداد موفقیت ها {}.'.format(0))

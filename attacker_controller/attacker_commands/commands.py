@@ -247,6 +247,20 @@ async def remove_attacker(client: Client, message: Message):
     await message.reply_text('شماره داده شده از لیست اتکر‌ها حذف شد.')
 
 
+async def clean_attacker_list(client: Client, message: Message):
+    """
+    Remove all attackers.
+    """
+    for attacker_phone in await storage.get_attackers():
+        await storage.remove_attacker(attacker_phone)
+
+    for _, __, files in os.walk('attacker_controller/sessions/attackers/'):
+        for file in files:
+            _remove_attacker_session(file)
+
+    await message.reply_text('تمام اتکرها از ربات پاک شدند.')
+
+
 async def set_first_name_all(client: Client, message: Message):
     """
     Set a first name for all attackers.

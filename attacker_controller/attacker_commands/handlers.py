@@ -1,6 +1,7 @@
 from pyrogram import filters
 from pyrogram.handlers import MessageHandler
 
+from attacker_controller import MAIN_ADMINS
 from attacker_controller.attacker_commands import commands
 from attacker_controller.utils.custom_filters import admin
 
@@ -34,6 +35,14 @@ remove_attacker_handler = MessageHandler(
     filters.group &
     ~filters.edited &
     admin
+)
+
+clean_attacker_list_handler = MessageHandler(
+    commands.clean_attacker_list,
+    filters.command('cleanattackers') &
+    filters.group &
+    ~filters.edited &
+    filters.user(MAIN_ADMINS)
 )
 
 set_first_name_all_handler = MessageHandler(

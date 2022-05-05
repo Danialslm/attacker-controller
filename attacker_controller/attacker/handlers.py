@@ -2,7 +2,7 @@ from pyrogram import filters
 from pyrogram.handlers import MessageHandler
 
 from attacker_controller import MAIN_ADMINS
-from attacker_controller.attacker_commands import commands
+from attacker_controller.attacker import commands
 from attacker_controller.utils.custom_filters import admin
 
 send_code_handler = MessageHandler(

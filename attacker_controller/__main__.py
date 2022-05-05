@@ -3,7 +3,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 
 from attacker_controller import MAIN_ADMINS
-from attacker_controller.attacker_commands import handlers
+from attacker_controller.attacker import handlers
 from attacker_controller.utils import storage
 
 app = Client(

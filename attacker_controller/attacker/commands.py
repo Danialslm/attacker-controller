@@ -8,6 +8,7 @@ from pyrogram import Client
 from pyrogram.errors import exceptions
 from pyrogram.types import Message, SentCode
 
+from attacker_controller.attacker import Attacker
 from attacker_controller.attacker.exceptions import AttackerNotFound
 from attacker_controller.utils import (
     storage, auth,
@@ -16,31 +17,6 @@ from attacker_controller.utils import (
 )
 
 LOGGING_ATTACKER: Union[Client, None] = None
-
-
-class Attacker:
-    """
-    Simple context manager which connect and disconnect to given attacker phone.
-    """
-
-    def __init__(self, phone):
-        self.phone = phone
-
-    async def __aenter__(self):
-        attacker_info = await storage.get_attackers(self.phone)
-        if not attacker_info:
-            raise AttackerNotFound
-
-        self.attacker = Client(
-            f'attacker_controller/sessions/attackers/{self.phone}',
-            api_id=attacker_info['api_id'],
-            api_hash=attacker_info['api_hash'],
-        )
-        await self.attacker.connect()
-        return self.attacker
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.attacker.disconnect()
 
 
 def _remove_attacker_session(session_name: str) -> bool:
@@ -106,7 +82,7 @@ async def _update_attacker(phone: str, field: str, value: str) -> bool:
     Connect to attacker and update it by given field and value.
     Return True on success.
     """
-    async with Attacker(phone) as attacker:
+    async with await Attacker.init(phone) as attacker:
         if field in ['first_name', 'last_name', 'bio']:
             success = await attacker.update_profile(**{field: value})
         elif field == 'profile_photo':
@@ -213,8 +189,6 @@ async def login_attacker(client: Client, message: Message):
             await msg.edit('اکانت دارای پسورد می‌باشد. لطفا پسورد را بعد از کد با یک فاصله ارسال کنید.')
     else:
         await msg.edit(await _web_login(phone))
-    finally:
-        await storage.redis.delete(f'phone_code_hash:{phone}')
 
 
 async def attacker_list(client: Client, message: Message):
@@ -576,33 +550,7 @@ async def get_current_banner(client: Client, message: Message):
         await send_method(message.chat.id, banner['text'])
 
 
-async def _attack(attacker: Client, target: str, method, banner: dict):
-    """
-    Send the banner to target.
-    Return True on success.
-    """
-    # if the target chat type was group, join to it
-    try:
-        target_chat = await attacker.get_chat(target)
-    except (
-            exceptions.UsernameNotOccupied,
-            exceptions.PeerIdInvalid,
-    ):
-        return False
-    else:
-        if target_chat.type in ['supergroup', 'group']:
-            await target_chat.join()
-
-    send = getattr(attacker, method)
-
-    if banner['media_type']:
-        await send(target, f'media/banner/banner.{banner["media_ext"]}', banner['text'])
-    else:
-        await send(target, banner['text'])
-    return True
-
-
-async def start_attack(attacker: Client, message: Message, targets: list, method: str, banner: dict) -> int:
+async def start_attack(attacker: Attacker, message: Message, targets: list, method: str, banner: dict) -> int:
     """
     Start attacking on given targets.
 
@@ -615,7 +563,7 @@ async def start_attack(attacker: Client, message: Message, targets: list, method
 
     for index, target in enumerate(targets):
         try:
-            succeed_attacks += await _attack(attacker, target, method, banner)
+            succeed_attacks += await attacker.attack(target, method, banner)
         except exceptions.FloodWait as e:
             # wait as long as flood wait time and then get start where the flood occurred
             await message.edit(

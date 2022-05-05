@@ -606,20 +606,20 @@ async def start_attack(attacker: Client, message: Message, targets: list, method
     """
     succeed_attacks = 0
 
-    for target in targets:
+    for index, target in enumerate(targets):
         try:
-            # some delay for each attack
-            await asyncio.sleep(0.5)
             succeed_attacks += await _attack(attacker, target, method, banner)
         except exceptions.FloodWait as e:
+            # wait as long as flood wait time and then get start where the flood occurred
             await message.edit(
                 'اکانت به مدت {} ثانیه فلود خورد. '
                 'بعد از اتمام فلود اتک دوباره شروع خواهد شد.\n'
                 'تعداد اتک های زده شده تا به الان: {}.'.format(e.x, succeed_attacks)
             )
             await asyncio.sleep(e.x)
-            targets = targets[targets.index(target):]
+            targets = targets[index:]
             succeed_attacks += await start_attack(attacker, message, targets, method, banner)
+            break
         except exceptions.PeerFlood:
             await message.edit('درحال حاظر این اتکر به محدود شده است.')
             break

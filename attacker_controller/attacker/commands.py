@@ -587,6 +587,11 @@ async def attack(client: Client, message: Message):
     """
     phone = message.matches[0].group(1)
 
+    # it is not possible to attack multiple places simultaneously
+    if await storage.redis.sismember('attacking_attackers', phone):
+        await message.reply_text('درحال حاضر این اتکر درحال اتک است.')
+        return
+
     # get usernames and ids from replied text
     targets = re.findall(r'(?<=@)\w{5,}|\d{6,}', message.reply_to_message.text)
 
@@ -599,8 +604,10 @@ async def attack(client: Client, message: Message):
     method = get_send_method_by_media_type(banner['media_type'])
 
     try:
-        async with Attacker(phone) as attacker:
+        async with await Attacker.init(phone) as attacker:
+            await storage.redis.sadd('attacking_attackers', attacker.phone)
             succeed_attacks = await start_attack(attacker, msg, targets, method, banner)
+            await storage.redis.srem('attacking_attackers', attacker.phone)
     except AttackerNotFound as e:
         await msg.edit(e.message)
     else:

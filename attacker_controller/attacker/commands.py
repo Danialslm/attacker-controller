@@ -8,6 +8,7 @@ from pyrogram import Client
 from pyrogram.errors import exceptions
 from pyrogram.types import Message, SentCode
 
+from attacker_controller.attacker.exceptions import AttackerNotFound
 from attacker_controller.utils import (
     storage, auth,
     get_send_method_by_media_type,
@@ -15,14 +16,6 @@ from attacker_controller.utils import (
 )
 
 LOGGING_ATTACKER: Union[Client, None] = None
-
-
-class AttackerNotFound(Exception):
-    """ Attacker with provided phone number doesn't exist. """
-
-    def __init__(self):
-        self.message = 'اتکری با این شماره یافت نشد.'
-        super().__init__(self.message)
 
 
 class Attacker:

@@ -76,6 +76,7 @@ async def help_commands(client: Client, message: Message):
 
 `/attackerlist` - لیست اتکر‌ها
 `/removeattacker` - حذف کردن اتکر (جلوش یک یا چند شماره باید باشه)
+`/cleanattackers` - حذف کردن تمام اتکرها
 
 `/setfirstnameall` - ست کردن نام کوچک برای همه اتکرها
 `/setlastnameall` - ست کردن نام خانوادگی برای همه اتکرها
@@ -90,6 +91,9 @@ async def help_commands(client: Client, message: Message):
 
 `/members` - گرفتن ممبرا (جلوش شماره و ایدی گپ و تعداد ممبرای دریافتی باید باشه)
 `/attack` - اتک (جلوش شماره باید باشه)
+
+`/setbanner` - ست کردن بنر جدید
+`/banner` - بنر فعلی
 """
     await message.reply_text(text)
 

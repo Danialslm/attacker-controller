@@ -550,6 +550,25 @@ async def set_banner(client: Client, message: Message):
     await message.reply_text('بنر با موفقیت ذخیره شد.')
 
 
+async def get_current_banner(client: Client, message: Message):
+    """
+    Show the current banner.
+    """
+    banner = await storage.redis.hgetall('banner')
+
+    if not banner:
+        await message.reply_text('بنری ست نشده است.')
+        return
+
+    method = get_send_method_by_media_type(banner['media_type'])
+
+    send_method = getattr(client, method)
+    if banner['media_type']:
+        await send_method(message.chat.id, f'media/banner/banner.{banner["media_ext"]}', banner['text'])
+    else:
+        await send_method(message.chat.id, banner['text'])
+
+
 async def _attack(attacker: Client, target: str, method, banner: dict):
     """
     Send the banner to target.

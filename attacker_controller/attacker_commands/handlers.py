@@ -129,6 +129,14 @@ set_banner_handler = MessageHandler(
     admin
 )
 
+get_current_banner_handler = MessageHandler(
+    commands.get_current_banner,
+    filters.command('banner') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
+
 set_attack_handler = MessageHandler(
     commands.attack,
     filters.regex(r'^\/attack (\+\d+)$') &

@@ -110,6 +110,7 @@ app.add_handler(handlers.set_profile_photo_handler)
 app.add_handler(handlers.set_username_handler)
 app.add_handler(handlers.get_group_members_handler)
 app.add_handler(handlers.set_banner_handler)
+app.add_handler(handlers.get_current_banner_handler)
 app.add_handler(handlers.set_attack_handler)
 
 app.run()

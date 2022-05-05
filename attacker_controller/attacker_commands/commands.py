@@ -8,7 +8,6 @@ from pyrogram import Client
 from pyrogram.errors import exceptions
 from pyrogram.types import Message, SentCode
 
-from attacker_controller import logger
 from attacker_controller.utils import storage, auth
 
 LOGGING_ATTACKER: Union[Client, None] = None
@@ -575,15 +574,42 @@ async def _attack(attacker: Client, target: str, method, banner: dict):
 
     send = getattr(attacker, method)
 
-    try:
-        if banner['media_type']:
-            await send(target, f'media/banner/banner.{banner["media_ext"]}', banner['text'])
-        else:
-            await send(target, banner['text'])
-        return True
-    except Exception as e:
-        logger.error(e)
-        return False
+    if banner['media_type']:
+        await send(target, f'media/banner/banner.{banner["media_ext"]}', banner['text'])
+    else:
+        await send(target, banner['text'])
+    return True
+
+
+async def start_attack(attacker: Client, message: Message, targets: list, method: str, banner: dict) -> int:
+    """
+    Start attacking on given targets.
+
+    If any FloodWait error occurred during attack, wait as long as flood wait time and
+    get start where the flood occurred.
+
+    Returns number of succeed attacks.
+    """
+    succeed_attacks = 0
+
+    for target in targets:
+        try:
+            # some delay for each attack
+            await asyncio.sleep(0.5)
+            succeed_attacks += await _attack(attacker, target, method, banner)
+        except exceptions.FloodWait as e:
+            await message.edit(
+                'اکانت به مدت {} ثانیه فلود خورد. '
+                'بعد از اتمام فلود اتک دوباره شروع خواهد شد.\n'
+                'تعداد اتک های زده شده تا به الان: {}.'.format(e.x, succeed_attacks)
+            )
+            await asyncio.sleep(e.x)
+            targets = targets[targets.index(target):]
+            succeed_attacks += await start_attack(attacker, message, targets, method, banner)
+        except exceptions.PeerFlood:
+            await message.edit('درحال حاظر این اتکر به محدود شده است.')
+            break
+    return succeed_attacks
 
 
 async def attack(client: Client, message: Message):
@@ -617,20 +643,8 @@ async def attack(client: Client, message: Message):
 
     try:
         async with Attacker(phone) as attacker:
-            attacks = [
-                asyncio.create_task(_attack(attacker, target, method, banner))
-                for target in targets
-            ]
-            results = await asyncio.gather(*attacks, return_exceptions=True)
+            succeed_attacks = await start_attack(attacker, msg, targets, method, banner)
     except AttackerNotFound as e:
         await msg.edit(e.message)
     else:
-        successes = 0
-        for result in results:
-            if isinstance(result, bool):
-                successes += result
-            elif isinstance(result, exceptions.FloodWait):
-                await msg.edit('اکانت به مدت {} ثانیه فلود خورد. اتک‌های زده شده {}.'.format(result.x, successes))
-                return
-
-        await msg.edit('اتک تمام شد. تعداد موفقیت ها {}.'.format(0))
+        await msg.edit('اتک تمام شد. تعداد اتک های موفق: {}.'.format(succeed_attacks))

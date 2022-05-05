@@ -1,4 +1,7 @@
-def get_send_method_by_media_type(media_type: str):
+from pyrogram.types import Message
+
+
+def get_send_method_by_media_type(media_type: str) -> str:
     """
     Get send method based on given media type.
     """
@@ -16,3 +19,24 @@ def get_send_method_by_media_type(media_type: str):
         method = 'send_message'
 
     return method
+
+
+def get_message_file_extension(message: Message) -> str:
+    """
+    Return the message file extension.
+    If no file is in the given message, empty string will return.
+    """
+    if message.media == 'photo':
+        file_ext = 'jpg'
+    elif message.media == 'video' or message.media == 'animation':
+        file_ext = 'mp4'
+    elif message.media == 'voice':
+        file_ext = 'ogg'
+    elif message.media == 'sticker':
+        file_ext = 'webm'
+        if message.sticker.is_animated:
+            file_ext = 'tgs'
+    else:
+        file_ext = ''
+
+    return file_ext

@@ -11,6 +11,7 @@ from pyrogram.types import Message, SentCode
 from attacker_controller.utils import (
     storage, auth,
     get_send_method_by_media_type,
+    get_message_file_extension,
 )
 
 LOGGING_ATTACKER: Union[Client, None] = None
@@ -533,16 +534,7 @@ async def set_banner(client: Client, message: Message):
     banner_media_ext = ''
     if media:
         # media file extension
-        if banner.media == 'photo':
-            banner_media_ext = 'jpg'
-        elif banner.media == 'video' or banner.media == 'animation':
-            banner_media_ext = 'mp4'
-        elif banner.media == 'voice':
-            banner_media_ext = 'ogg'
-        elif banner.media == 'sticker':
-            banner_media_ext = 'webm'
-            if banner.sticker.is_animated:
-                banner_media_ext = 'tgs'
+        banner_media_ext = get_message_file_extension(banner)
 
         await message.reply_to_message.download(file_name=f'media/banner/banner.{banner_media_ext}')
 

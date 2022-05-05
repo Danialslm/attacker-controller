@@ -8,7 +8,10 @@ from pyrogram import Client
 from pyrogram.errors import exceptions
 from pyrogram.types import Message, SentCode
 
-from attacker_controller.utils import storage, auth
+from attacker_controller.utils import (
+    storage, auth,
+    get_send_method_by_media_type,
+)
 
 LOGGING_ATTACKER: Union[Client, None] = None
 
@@ -627,19 +630,7 @@ async def attack(client: Client, message: Message):
     msg = await message.reply_text('درحال اتک به لیست با شماره {}. لطفا صبر کنید...'.format(phone))
 
     banner = await storage.redis.hgetall('banner')
-    # sending method based on banner media type
-    if banner['media_type'] == 'photo':
-        method = 'send_photo'
-    elif banner['media_type'] == 'video':
-        method = 'send_video'
-    elif banner['media_type'] == 'animation':
-        method = 'send_animation'
-    elif banner['media_type'] == 'voice':
-        method = 'send_voice'
-    elif banner['media_type'] == 'sticker':
-        method = 'send_sticker'
-    else:
-        method = 'send_message'
+    method = get_send_method_by_media_type(banner['media_type'])
 
     try:
         async with Attacker(phone) as attacker:

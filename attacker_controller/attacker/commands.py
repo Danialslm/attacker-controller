@@ -471,7 +471,7 @@ async def get_group_members(client: Client, message: Message):
     member_counter = 0
     text = ''
     try:
-        async with Attacker(phone) as attacker:
+        async with await Attacker.init(phone) as attacker:
             async for member in attacker.iter_chat_members(group_id, limit=limit):
                 # don't capture the bots and the users that doesn't have username
                 if member.user.is_bot or not member.user.username:

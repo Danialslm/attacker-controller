@@ -1,5 +1,5 @@
 from pyrogram import Client
-from pyrogram.errors import exceptions
+from pyrogram.errors import exceptions as pyro_exceptions
 
 from attacker_controller.attacker.exceptions import AttackerNotFound
 from attacker_controller.utils import storage
@@ -47,8 +47,8 @@ class Attacker(Client):
         try:
             target_chat = await self.get_chat(target)
         except (
-                exceptions.UsernameNotOccupied,
-                exceptions.PeerIdInvalid,
+                pyro_exceptions.UsernameNotOccupied,
+                pyro_exceptions.PeerIdInvalid,
         ):
             return False
         else:

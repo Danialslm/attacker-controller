@@ -11,7 +11,7 @@ RESTART_ARGS=
 
 set -x
 
-cd $APP_DIR/
+cd $APP_DIR
 git pull
 
 # Activate the virtualenv and install the dependencies
@@ -19,4 +19,4 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # Restart the app
-passenger-config restart-app --ignore-app-not-running --ignore-passenger-not-running "$RESTART_ARGS" $APP_DIR/code
+passenger-config restart-app --ignore-app-not-running --ignore-passenger-not-running "$RESTART_ARGS" $APP_DIR

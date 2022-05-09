@@ -1,13 +1,14 @@
 import asyncio
 import os
 import re
-from typing import Union
+from typing import Union, Tuple
 
 from decouple import config
 from pyrogram import Client
 from pyrogram.errors import exceptions
 from pyrogram.types import Message, SentCode
 
+from attacker_controller import logger
 from attacker_controller.attacker import Attacker
 from attacker_controller.attacker.exceptions import AttackerNotFound
 from attacker_controller.utils import (
@@ -64,38 +65,51 @@ async def _web_login(phone: str) -> str:
         return 'فرایند به اتمام رسید و {}'.format(res[1])
 
 
-async def _update_all_attackers(field: str, value: str) -> int:
+async def _update_all_attackers(field: str, value: str) -> Tuple[int, list]:
     """
     Update all available attackers.
-    Return the successes number.
+    Return the succeed number and Unsuccessful phone numbers.
     """
     updates = [
         asyncio.create_task(_update_attacker(atk_phone, field, value))
         for atk_phone in await storage.get_attackers()
     ]
-    successes = sum(await asyncio.gather(*updates))
-    return successes
+    number_of_successes = 0
+    unsuccessful_phones = []
+
+    # get the phones that didn't update
+    for succeed in await asyncio.gather(*updates):
+        if succeed:
+            number_of_successes += 1
+        else:
+            unsuccessful_phones.append(succeed[1])
+    return number_of_successes, unsuccessful_phones
 
 
-async def _update_attacker(phone: str, field: str, value: str) -> bool:
+async def _update_attacker(phone: str, field: str, value: str) -> Union[bool, Tuple[bool, str]]:
     """
     Connect to attacker and update it by given field and value.
-    Return True on success.
+    Return True on success
     """
     async with await Attacker.init(phone) as attacker:
-        if field in ['first_name', 'last_name', 'bio']:
-            success = await attacker.update_profile(**{field: value})
-        elif field == 'profile_photo':
-            success = await attacker.set_profile_photo(photo=value)
-        elif field == 'username':
-            try:
-                success = await attacker.update_username(value)
-            except (exceptions.UsernameInvalid, exceptions.UsernameOccupied):
-                success = False
-        else:
-            success = False
+        try:
+            if field in ['first_name', 'last_name', 'bio']:
+                succeed = await attacker.update_profile(**{field: value})
+            elif field == 'profile_photo':
+                succeed = await attacker.set_profile_photo(photo=value)
+            elif field == 'username':
+                succeed = await attacker.update_username(value)
+            else:
+                return False, phone
+        except (
+                exceptions.UsernameInvalid,
+                exceptions.UsernameOccupied,
+                exceptions.AuthKeyUnregistered,
+        ) as e:
+            logger.error(e)
+            return False, phone
 
-    return success
+    return succeed
 
 
 async def send_code(client: Client, message: Message):
@@ -239,12 +253,16 @@ async def set_first_name_all(client: Client, message: Message):
 
     msg = await message.reply_text('درحال تغییر نام کوچک اتکر‌ها. لطفا صبر کنید...')
 
-    number_of_successes = await _update_all_attackers('first_name', provided_first_name)
+    number_of_successes, unsuccessful_phones = await _update_all_attackers('first_name', provided_first_name)
 
-    await msg.edit(
-        '{} اتکر نام کوچک‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_first_name),
-        parse_mode='markdown',
-    )
+    text = '{} اتکر نام کوچک‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_first_name)
+    if unsuccessful_phones:
+        text += (
+            '\nمشکلی در تغییر نام کوچک اتکرهای زیر به وجود آمد.\n'
+            '\n'.join(unsuccessful_phones)
+        )
+
+    await msg.edit(text, parse_mode='markdown')
 
 
 async def set_last_name_all(client: Client, message: Message):
@@ -258,12 +276,16 @@ async def set_last_name_all(client: Client, message: Message):
 
     msg = await message.reply_text('درحال تغییر نام خانوادگی اتکر‌ها. لطفا صبر کنید...')
 
-    number_of_successes = await _update_all_attackers('last_name', provided_last_name)
+    number_of_successes, unsuccessful_phones = await _update_all_attackers('last_name', provided_last_name)
 
-    await msg.edit(
-        '{} اتکر نام خانوادگی‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_last_name),
-        parse_mode='markdown',
-    )
+    text = '{} اتکر نام خانوادگی‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_last_name)
+    if unsuccessful_phones:
+        text += (
+            '\nمشکلی در تغییر نام خانوادگی اتکرهای زیر به وجود آمد.\n'
+            '\n'.join(unsuccessful_phones)
+        )
+
+    await msg.edit(text, parse_mode='markdown')
 
 
 async def set_bio_all(client: Client, message: Message):
@@ -277,12 +299,16 @@ async def set_bio_all(client: Client, message: Message):
 
     msg = await message.reply_text('درحال تغییر بیو اتکر‌ها. لطفا صبر کنید...')
 
-    number_of_successes = await _update_all_attackers('bio', provided_bio)
+    number_of_successes, unsuccessful_phones = await _update_all_attackers('bio', provided_bio)
 
-    await msg.edit(
-        '{} اتکر بیو‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_bio),
-        parse_mode='markdown',
-    )
+    text = '{} اتکر بیو‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_bio)
+    if unsuccessful_phones:
+        text += (
+            '\nمشکلی در تغییر بیو اتکرهای زیر به وجود آمد.\n'
+            '\n'.join(unsuccessful_phones)
+        )
+
+    await msg.edit(text, parse_mode='markdown')
 
 
 async def set_profile_photo_all(client: Client, message: Message):
@@ -302,13 +328,17 @@ async def set_profile_photo_all(client: Client, message: Message):
         file_name='media/profile_photo.jpg',
     )
 
-    number_of_successes = await _update_all_attackers('profile_photo', provided_photo)
+    number_of_successes, unsuccessful_phones = await _update_all_attackers('profile_photo', provided_photo)
 
+    text = '{} اتکر عکس پروفایل‌شان تغییر یافت.'.format(number_of_successes)
+    if unsuccessful_phones:
+        text += (
+            '\nمشکلی در تغییر پروفایل اتکرهای زیر به وجود آمد.\n'
+            '\n'.join(unsuccessful_phones)
+        )
     os.remove('media/profile_photo.jpg')
-    await msg.edit(
-        '{} اتکر عکس پروفایل‌شان تغییر یافت.'.format(number_of_successes),
-        parse_mode='markdown',
-    )
+
+    await msg.edit(text, parse_mode='markdown')
 
 
 async def set_first_name(client: Client, message: Message):

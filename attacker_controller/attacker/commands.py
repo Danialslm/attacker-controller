@@ -101,12 +101,8 @@ async def _update_attacker(phone: str, field: str, value: str) -> Union[bool, Tu
                 succeed = await attacker.update_username(value)
             else:
                 return False, phone
-        except (
-                exceptions.UsernameInvalid,
-                exceptions.UsernameOccupied,
-                exceptions.AuthKeyUnregistered,
-        ) as e:
-            logger.error(e)
+        except Exception:
+            logger.exception('An exception occurred when updating attacker.')
             return False, phone
 
     return succeed
@@ -363,7 +359,7 @@ async def set_first_name(client: Client, message: Message):
         if success:
             await msg.edit('اتکر {} نام کوچکش به **{}** تغییر یافت.'.format(phone, provided_first_name))
         else:
-            await msg.edit('مشکلی در تغییر نام کوچک اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
+            await msg.edit('مشکلی در تغییر نام کوچک اتکر {} به وجود آمد.'.format(phone))
 
 
 async def set_last_name(client: Client, message: Message):
@@ -387,7 +383,7 @@ async def set_last_name(client: Client, message: Message):
         if success:
             await msg.edit('اتکر {} نام خانوادگی اش به **{}** تغییر یافت.'.format(phone, provided_last_name))
         else:
-            await msg.edit('مشکلی در تغییر نام خانوادگی اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
+            await msg.edit('مشکلی در تغییر نام خانوادگی اتکر {} به وجود آمد.'.format(phone))
 
 
 async def set_bio(client: Client, message: Message):
@@ -411,7 +407,7 @@ async def set_bio(client: Client, message: Message):
         if success:
             await msg.edit('اتکر {} بیو اش به **{}** تغییر یافت.'.format(phone, provided_bio))
         else:
-            await msg.edit('مشکلی در تغییر بیو اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
+            await msg.edit('مشکلی در تغییر بیو اتکر {} به وجود آمد.'.format(phone))
 
 
 async def set_profile_photo(client: Client, message: Message):
@@ -441,7 +437,7 @@ async def set_profile_photo(client: Client, message: Message):
         if success:
             await msg.edit('اتکر {} عکس پروفایلش اش تغییر یافت.'.format(phone, provided_photo))
         else:
-            await msg.edit('مشکلی در تغییر عکس پروفایل اتکر {} به وجود آمد. لطفا دوباره امتحان کنید.'.format(phone))
+            await msg.edit('مشکلی در تغییر عکس پروفایل اتکر {} به وجود آمد.'.format(phone))
     finally:
         os.remove('media/profile_photo.jpg')
 

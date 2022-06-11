@@ -31,7 +31,7 @@ attacker_list_handler = MessageHandler(
 
 remove_attacker_handler = MessageHandler(
     commands.remove_attacker,
-    filters.regex(r'^\/removeattacker (\+\d+)$') &
+    filters.regex(r'^\/removeattacker (\+\d+(?:\s+\+\d+)*)$') &
     filters.group &
     ~filters.edited &
     admin

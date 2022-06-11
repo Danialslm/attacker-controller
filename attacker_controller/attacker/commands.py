@@ -222,10 +222,11 @@ async def remove_attacker(client: Client, message: Message):
     """
     Remove given phone from attacker list.
     """
-    phone = message.matches[0].group(1)
-    await storage.remove_attacker(phone)
-    _remove_attacker_session(phone)
-    await message.reply_text('شماره داده شده از لیست اتکر‌ها حذف شد.')
+    phones = message.matches[0].group(1).split()
+    for phone in phones:
+        await storage.remove_attacker(phone)
+        _remove_attacker_session(phone)
+    await message.reply_text('شماره(های) داده شده از لیست اتکر‌ها حذف شد.')
 
 
 async def clean_attacker_list(client: Client, message: Message):

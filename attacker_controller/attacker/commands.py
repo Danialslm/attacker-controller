@@ -523,7 +523,8 @@ async def get_group_members(client: Client, message: Message):
         await msg.edit(
             'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
     except Exception as e:
-        await msg.edit('خطای غیر منتظره ای هنگام انجام عملیات رخ داده است.\n {}'.format(e))
+        exception_class = e.__class__.__name__
+        await msg.edit('خطای غیر منتظره ای هنگام انجام عملیات رخ داده است.\n {}  -{}'.format(exception_class, e))
     else:
         # if any members still left
         if text:

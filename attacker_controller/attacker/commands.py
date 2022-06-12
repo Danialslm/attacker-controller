@@ -647,5 +647,11 @@ async def attack(client: Client, message: Message):
             await storage.redis.srem('attacking_attackers', attacker.phone)
     except AttackerNotFound as e:
         await msg.edit(e.message)
+    except exceptions.AuthKeyUnregistered:
+        await msg.edit(
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
+    except Exception as e:
+        exception_class = e.__class__.__name__
+        await msg.edit('خطای غیر منتظره ای هنگام انجام عملیات رخ داده است.\n {}  -{}'.format(exception_class, e))
     else:
         await msg.edit('اتک تمام شد. تعداد اتک های موفق: {}.'.format(succeed_attacks))

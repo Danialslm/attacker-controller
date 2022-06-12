@@ -91,8 +91,8 @@ async def _update_attacker(phone: str, field: str, value: str) -> Union[bool, Tu
     Connect to attacker and update it by given field and value.
     Return True on success
     """
-    async with await Attacker.init(phone) as attacker:
-        try:
+    try:
+        async with await Attacker.init(phone) as attacker:
             if field in ['first_name', 'last_name', 'bio']:
                 succeed = await attacker.update_profile(**{field: value})
             elif field == 'profile_photo':
@@ -101,9 +101,9 @@ async def _update_attacker(phone: str, field: str, value: str) -> Union[bool, Tu
                 succeed = await attacker.update_username(value)
             else:
                 return False, phone
-        except Exception:
-            logger.exception('An exception occurred when updating attacker.')
-            return False, phone
+    except Exception:
+        logger.exception('An exception occurred when updating attacker.')
+        return False, phone
 
     return succeed
 

@@ -195,10 +195,14 @@ async def login_attacker(client: Client, message: Message):
                 await msg.edit('پسورد اشتباه است!')
             else:
                 await msg.edit(await _web_login(phone))
+                await LOGGING_ATTACKER.disconnect()
+                LOGGING_ATTACKER = None
         else:
             await msg.edit('اکانت دارای پسورد می‌باشد. لطفا پسورد را بعد از کد با یک فاصله ارسال کنید.')
     else:
         await msg.edit(await _web_login(phone))
+        await LOGGING_ATTACKER.disconnect()
+        LOGGING_ATTACKER = None
 
 
 async def attacker_list(client: Client, message: Message):

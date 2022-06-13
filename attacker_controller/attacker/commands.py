@@ -533,7 +533,7 @@ async def get_group_members(client: Client, message: Message):
     group_id = message.matches[0].group(2).replace('https://t.me/', '')
     limit = int(message.matches[0].group(3))
 
-    msg = await message.reply_text('درحال گرفتن لیست ممبر های گروه. لطفا صبر کنید...')
+    status_msg = await message.reply_text('درحال گرفتن لیست ممبر های گروه. لطفا صبر کنید...')
 
     # if the user entered the group chat id, convert it to int
     if group_id.lstrip('-').isdigit():
@@ -543,11 +543,11 @@ async def get_group_members(client: Client, message: Message):
     try:
         target_chat = await client.get_chat(group_id)
     except exceptions.PeerIdInvalid:
-        await msg.edit('ایدی نامعتبر است.')
+        await status_msg.edit('ایدی نامعتبر است.')
         return
     else:
         if target_chat.type not in ['group', 'supergroup']:
-            await msg.edit('هدف گروه یا سوپرگروه نیست.')
+            await status_msg.edit('هدف گروه یا سوپرگروه نیست.')
             return
 
     member_counter = 0
@@ -565,17 +565,18 @@ async def get_group_members(client: Client, message: Message):
                 else:
                     text += f'{member_counter} - @{member.user.username}\n'
 
+                # send members in lists of 50
                 if member_counter % 50 == 0:
                     await message.reply_text(text)
                     text = ''
     except AttackerNotFound as e:
-        await msg.edit(e.message)
+        await status_msg.edit(e.message)
     except exceptions.AuthKeyUnregistered:
-        await msg.edit(
+        await status_msg.edit(
             'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
     except Exception as e:
         exception_class = e.__class__.__name__
-        await msg.edit('خطای غیر منتظره ای هنگام انجام عملیات رخ داده است.\n {}  -{}'.format(exception_class, e))
+        await status_msg.edit('خطای غیر منتظره ای هنگام انجام عملیات رخ داده است.\n {}  - {}'.format(exception_class, e))
     else:
         # if any members still left
         if text:

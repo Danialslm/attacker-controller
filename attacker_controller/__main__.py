@@ -47,7 +47,7 @@ async def remove_admin(client: Client, message: Message):
     filters.user(MAIN_ADMINS)
 )
 async def admin_list(client: Client, message: Message):
-    """ Return list of current admins. """
+    """ Send current admins list."""
     text = 'لیست چت ایدی ادمین‌های فعلی ربات:\n\n'
     admin_counter = 0
     for chat_id in await storage.get_admins():

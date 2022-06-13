@@ -1,9 +1,12 @@
+import os
+
 from decouple import config
 from pyrogram import Client, filters
 from pyrogram.types import Message
 
 from attacker_controller import MAIN_ADMINS
-from attacker_controller.utils import storage
+from attacker_controller.utils import storage, remove_attacker_session
+from attacker_controller.utils.custom_filters import admin
 
 app = Client(
     'attacker_controller/sessions/attacker_controller',
@@ -55,6 +58,56 @@ async def admin_list(client: Client, message: Message):
         text += f'{admin_counter} - `{chat_id}`\n'
 
     await message.reply_text(text)
+
+
+@app.on_message(
+    filters.command('attackerlist') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
+async def attacker_list(client: Client, message: Message):
+    """ Send list of attackers phone. """
+    text = 'لیست اتکرها : \n\n'
+    attackers = await storage.get_attackers()
+    attacker_counter = 0
+    for attacker in attackers:
+        attacker_counter += 1
+        text += f'{attacker_counter} - `{attacker}`\n'
+    await message.reply_text(text)
+
+
+@app.on_message(
+    filters.regex(r'^\/removeattacker (\+\d+(?:\s+\+\d+)*)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
+async def remove_attacker(client: Client, message: Message):
+    """ Remove given phone(s) from attacker list. """
+    phones = message.matches[0].group(1).split()
+    for phone in phones:
+        await storage.remove_attacker(phone)
+        remove_attacker_session(phone)
+    await message.reply_text('شماره(های) داده شده از لیست اتکر‌ها حذف شد.')
+
+
+@app.on_message(
+    filters.command('cleanattackers') &
+    filters.group &
+    ~filters.edited &
+    filters.user(MAIN_ADMINS)
+)
+async def clean_attacker_list(client: Client, message: Message):
+    """ Remove all attackers. """
+    for attacker_phone in await storage.get_attackers():
+        await storage.remove_attacker(attacker_phone)
+
+    for _, __, files in os.walk('attacker_controller/sessions/attackers/'):
+        for file in files:
+            remove_attacker_session(file)
+
+    await message.reply_text('تمام اتکرها از ربات پاک شدند.')
 
 
 @app.on_message(

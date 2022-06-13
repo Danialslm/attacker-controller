@@ -13,24 +13,11 @@ from attacker_controller.attacker import Attacker
 from attacker_controller.attacker.exceptions import AttackerNotFound
 from attacker_controller.utils import (
     storage, auth,
-    get_send_method_by_media_type,
+    get_send_method_by_media_type, remove_attacker_session,
 )
 from attacker_controller.utils.custom_filters import admin
 
 LOGGING_ATTACKER: Union[Client, None] = None
-
-
-def _remove_attacker_session(session_name: str) -> bool:
-    """
-    Remove a attacker session by given session name.
-    Return boolean that shows the file removed or no.
-    """
-    try:
-        os.remove(f'attacker_controller/sessions/attackers/{session_name}.session')
-    except FileNotFoundError:
-        return False
-
-    return True
 
 
 async def _web_login(phone: str) -> str:
@@ -158,7 +145,7 @@ async def send_code(client: Client, message: Message):
         # because we need the client in next step which is login
         if not code_sent:
             await LOGGING_ATTACKER.disconnect()
-            _remove_attacker_session(phone)
+            remove_attacker_session(phone)
 
 
 @Client.on_message(

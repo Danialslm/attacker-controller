@@ -69,21 +69,23 @@ async def _web_login(phone: str) -> str:
 async def _update_all_attackers(field: str, value: str) -> Tuple[int, list]:
     """
     Update all available attackers.
-    Return the succeed number and Unsuccessful phone numbers.
+    Return number of successes and Unsuccessful phone numbers.
     """
-    updates = [
-        asyncio.create_task(_update_attacker(atk_phone, field, value))
-        for atk_phone in await storage.get_attackers()
-    ]
     number_of_successes = 0
     unsuccessful_phones = []
 
     # get the phones that didn't update
-    for succeed in await asyncio.gather(*updates):
-        if succeed:
-            number_of_successes += 1
+    for atk_phone in await storage.get_attackers():
+        try:
+            succeed = await _update_attacker(atk_phone, field, value)
+        except Exception as e:
+            logger.error(f'Error on updating attacker {atk_phone}: {e}')
+            unsuccessful_phones.append(atk_phone)
         else:
-            unsuccessful_phones.append(succeed[1])
+            if succeed:
+                number_of_successes += 1
+            else:
+                unsuccessful_phones.append(atk_phone)
     return number_of_successes, unsuccessful_phones
 
 
@@ -93,19 +95,14 @@ async def _update_attacker(phone: str, field: str, value: str) -> Union[bool, Tu
     Return True on success
     """
     async with await Attacker.init(phone) as attacker:
-        try:
-            if field in ['first_name', 'last_name', 'bio']:
-                succeed = await attacker.update_profile(**{field: value})
-            elif field == 'profile_photo':
-                succeed = await attacker.set_profile_photo(photo=value)
-            elif field == 'username':
-                succeed = await attacker.update_username(value)
-            else:
-                return False, phone
-        except Exception:
-            logger.exception('An exception occurred when updating attacker.')
-            return False, phone
-
+        if field in ['first_name', 'last_name', 'bio']:
+            succeed = await attacker.update_profile(**{field: value})
+        elif field == 'profile_photo':
+            succeed = await attacker.set_profile_photo(photo=value)
+        elif field == 'username':
+            succeed = await attacker.update_username(value)
+        else:
+            return False
     return succeed
 
 
@@ -242,18 +239,16 @@ async def set_first_name_all(client: Client, message: Message):
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
         return
 
-    msg = await message.reply_text('درحال تغییر نام کوچک اتکر‌ها. لطفا صبر کنید...')
+    status_msg = await message.reply_text('درحال تغییر نام کوچک اتکر‌ها. لطفا صبر کنید...')
 
     number_of_successes, unsuccessful_phones = await _update_all_attackers('first_name', provided_first_name)
 
     text = '{} اتکر نام کوچک‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_first_name)
     if unsuccessful_phones:
-        text += (
-            '\nمشکلی در تغییر نام کوچک اتکرهای زیر به وجود آمد.\n'
-            '\n'.join(unsuccessful_phones)
-        )
+        text += '\nمشکلی در تغییر نام کوچک اتکرهای زیر به وجود آمد.\n'
+        text += '\n'.join(unsuccessful_phones)
 
-    await msg.edit(text, parse_mode='markdown')
+    await status_msg.edit(text, parse_mode='markdown')
 
 
 @Client.on_message(
@@ -272,18 +267,16 @@ async def set_last_name_all(client: Client, message: Message):
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
         return
 
-    msg = await message.reply_text('درحال تغییر نام خانوادگی اتکر‌ها. لطفا صبر کنید...')
+    status_msg = await message.reply_text('درحال تغییر نام خانوادگی اتکر‌ها. لطفا صبر کنید...')
 
     number_of_successes, unsuccessful_phones = await _update_all_attackers('last_name', provided_last_name)
 
     text = '{} اتکر نام خانوادگی‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_last_name)
     if unsuccessful_phones:
-        text += (
-            '\nمشکلی در تغییر نام خانوادگی اتکرهای زیر به وجود آمد.\n'
-            '\n'.join(unsuccessful_phones)
-        )
+        text += '\nمشکلی در تغییر نام خانوادگی اتکرهای زیر به وجود آمد.\n'
+        text += '\n'.join(unsuccessful_phones)
 
-    await msg.edit(text, parse_mode='markdown')
+    await status_msg.edit(text, parse_mode='markdown')
 
 
 @Client.on_message(
@@ -302,18 +295,16 @@ async def set_bio_all(client: Client, message: Message):
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
         return
 
-    msg = await message.reply_text('درحال تغییر بیو اتکر‌ها. لطفا صبر کنید...')
+    status_msg = await message.reply_text('درحال تغییر بیو اتکر‌ها. لطفا صبر کنید...')
 
     number_of_successes, unsuccessful_phones = await _update_all_attackers('bio', provided_bio)
 
     text = '{} اتکر بیو‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_bio)
     if unsuccessful_phones:
-        text += (
-            '\nمشکلی در تغییر بیو اتکرهای زیر به وجود آمد.\n'
-            '\n'.join(unsuccessful_phones)
-        )
+        text += '\nمشکلی در تغییر بیو اتکرهای زیر به وجود آمد.\n'
+        text += '\n'.join(unsuccessful_phones)
 
-    await msg.edit(text, parse_mode='markdown')
+    await status_msg.edit(text, parse_mode='markdown')
 
 
 @Client.on_message(
@@ -332,7 +323,7 @@ async def set_profile_photo_all(client: Client, message: Message):
         await message.reply_text('لطفا روی یک عکس ریپلای بزنید و دستور را بفرستید.')
         return
 
-    msg = await message.reply_text('درحال تغییر عکس پروفایل اتکر‌ها. لطفا صبر کنید...')
+    status_msg = await message.reply_text('درحال تغییر عکس پروفایل اتکر‌ها. لطفا صبر کنید...')
 
     # download the photo
     provided_photo = await client.download_media(
@@ -344,13 +335,11 @@ async def set_profile_photo_all(client: Client, message: Message):
 
     text = '{} اتکر عکس پروفایل‌شان تغییر یافت.'.format(number_of_successes)
     if unsuccessful_phones:
-        text += (
-            '\nمشکلی در تغییر پروفایل اتکرهای زیر به وجود آمد.\n'
-            '\n'.join(unsuccessful_phones)
-        )
+        text += '\nمشکلی در تغییر پروفایل اتکرهای زیر به وجود آمد.\n'
+        text += '\n'.join(unsuccessful_phones)
     os.remove('media/profile_photo.jpg')
 
-    await msg.edit(text, parse_mode='markdown')
+    await status_msg.edit(text, parse_mode='markdown')
 
 
 @Client.on_message(
@@ -370,17 +359,20 @@ async def set_first_name(client: Client, message: Message):
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
         return
 
-    msg = await message.reply_text('درحال تغییر نام کوچک اتکر {}. لطفا صبر کنید...'.format(phone))
+    status_msg = await message.reply_text('درحال تغییر نام کوچک اتکر {}. لطفا صبر کنید...'.format(phone))
 
     try:
         success = await _update_attacker(phone, 'first_name', provided_first_name)
     except AttackerNotFound as e:
-        await msg.edit(e.message)
+        await status_msg.edit(e.message)
+    except exceptions.AuthKeyUnregistered:
+        await status_msg.edit(
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
     else:
         if success:
-            await msg.edit('اتکر {} نام کوچکش به **{}** تغییر یافت.'.format(phone, provided_first_name))
+            await status_msg.edit('اتکر {} نام کوچکش به **{}** تغییر یافت.'.format(phone, provided_first_name))
         else:
-            await msg.edit('مشکلی در تغییر نام کوچک اتکر {} به وجود آمد.'.format(phone))
+            await status_msg.edit('مشکلی در تغییر نام کوچک اتکر {} به وجود آمد.'.format(phone))
 
 
 @Client.on_message(
@@ -400,17 +392,20 @@ async def set_last_name(client: Client, message: Message):
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
         return
 
-    msg = await message.reply_text('درحال تغییر نام خانوادگی اتکر {}. لطفا صبر کنید...'.format(phone))
+    status_msg = await message.reply_text('درحال تغییر نام خانوادگی اتکر {}. لطفا صبر کنید...'.format(phone))
 
     try:
         success = await _update_attacker(phone, 'last_name', provided_last_name)
     except AttackerNotFound as e:
-        await msg.edit(e.message)
+        await status_msg.edit(e.message)
+    except exceptions.AuthKeyUnregistered:
+        await status_msg.edit(
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
     else:
         if success:
-            await msg.edit('اتکر {} نام خانوادگی اش به **{}** تغییر یافت.'.format(phone, provided_last_name))
+            await status_msg.edit('اتکر {} نام خانوادگی اش به **{}** تغییر یافت.'.format(phone, provided_last_name))
         else:
-            await msg.edit('مشکلی در تغییر نام خانوادگی اتکر {} به وجود آمد.'.format(phone))
+            await status_msg.edit('مشکلی در تغییر نام خانوادگی اتکر {} به وجود آمد.'.format(phone))
 
 
 @Client.on_message(
@@ -430,17 +425,20 @@ async def set_bio(client: Client, message: Message):
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
         return
 
-    msg = await message.reply_text('درحال تغییر بیو اتکر {}. لطفا صبر کنید...'.format(phone))
+    status_msg = await message.reply_text('درحال تغییر بیو اتکر {}. لطفا صبر کنید...'.format(phone))
 
     try:
         success = await _update_attacker(phone, 'bio', provided_bio)
     except AttackerNotFound as e:
-        await msg.edit(e.message)
+        await status_msg.edit(e.message)
+    except exceptions.AuthKeyUnregistered:
+        await status_msg.edit(
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
     else:
         if success:
-            await msg.edit('اتکر {} بیو اش به **{}** تغییر یافت.'.format(phone, provided_bio))
+            await status_msg.edit('اتکر {} بیو اش به **{}** تغییر یافت.'.format(phone, provided_bio))
         else:
-            await msg.edit('مشکلی در تغییر بیو اتکر {} به وجود آمد.'.format(phone))
+            await status_msg.edit('مشکلی در تغییر بیو اتکر {} به وجود آمد.'.format(phone))
 
 
 @Client.on_message(
@@ -466,17 +464,20 @@ async def set_profile_photo(client: Client, message: Message):
         file_name='media/profile_photo.jpg',
     )
 
-    msg = await message.reply_text('درحال تغییر عکس پروفایل اتکر {}. لطفا صبر کنید...'.format(phone))
+    status_msg = await message.reply_text('درحال تغییر عکس پروفایل اتکر {}. لطفا صبر کنید...'.format(phone))
 
     try:
         success = await _update_attacker(phone, 'profile_photo', provided_photo)
     except AttackerNotFound as e:
-        await msg.edit(e.message)
+        await status_msg.edit(e.message)
+    except exceptions.AuthKeyUnregistered:
+        await status_msg.edit(
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
     else:
         if success:
-            await msg.edit('اتکر {} عکس پروفایلش اش تغییر یافت.'.format(phone, provided_photo))
+            await status_msg.edit('اتکر {} عکس پروفایلش اش تغییر یافت.'.format(phone, provided_photo))
         else:
-            await msg.edit('مشکلی در تغییر عکس پروفایل اتکر {} به وجود آمد.'.format(phone))
+            await status_msg.edit('مشکلی در تغییر عکس پروفایل اتکر {} به وجود آمد.'.format(phone))
     finally:
         os.remove('media/profile_photo.jpg')
 
@@ -498,17 +499,20 @@ async def set_username(client: Client, message: Message):
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
         return
 
-    msg = await message.reply_text('درحال تغییر نام کاربری اتکر {}. لطفا صبر کنید...'.format(phone))
+    status_msg = await message.reply_text('درحال تغییر نام کاربری اتکر {}. لطفا صبر کنید...'.format(phone))
 
     try:
         success = await _update_attacker(phone, 'username', provided_username)
     except AttackerNotFound as e:
-        await msg.edit(e.message)
+        await status_msg.edit(e.message)
+    except exceptions.AuthKeyUnregistered:
+        await status_msg.edit(
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
     else:
         if success:
-            await msg.edit('اتکر {} نام کاربری اش به **{}** تغییر یافت.'.format(phone, provided_username))
+            await status_msg.edit('اتکر {} نام کاربری اش به **{}** تغییر یافت.'.format(phone, provided_username))
         else:
-            await msg.edit(
+            await status_msg.edit(
                 'مشکلی در تغییر نام کاربری اتکر {} به وجود آمد.\n'
                 'ممکن است این نام کاربری از قبل رزرو شده باشد.\n'
                 'همچنین توجه کنید که نام کاربری معتبر است.'.format(phone),

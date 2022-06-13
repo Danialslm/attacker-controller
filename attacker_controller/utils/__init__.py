@@ -1,3 +1,5 @@
+import os
+
 from pyrogram.types import Message
 
 
@@ -40,3 +42,13 @@ def get_message_file_extension(message: Message) -> str:
         file_ext = ''
 
     return file_ext
+
+
+def remove_attacker_session(session_name: str):
+    """
+    Remove a attacker session by given session name.
+    """
+    try:
+        os.remove(f'attacker_controller/sessions/attackers/{session_name}.session')
+    except FileNotFoundError:
+        pass

@@ -1,6 +1,5 @@
 from pyrogram import Client
-from pyrogram.errors import exceptions as pyro_exceptions
-
+from pyrogram.errors.exceptions import UsernameNotOccupied, PeerIdInvalid
 from attacker_controller.attacker.exceptions import AttackerNotFound
 from attacker_controller.utils import storage
 
@@ -47,18 +46,18 @@ class Attacker(Client):
         try:
             target_chat = await self.get_chat(target)
         except (
-                pyro_exceptions.UsernameNotOccupied,
-                pyro_exceptions.PeerIdInvalid,
+                UsernameNotOccupied,
+                PeerIdInvalid,
         ):
             return False
         else:
             if target_chat.type in ['supergroup', 'group']:
                 await target_chat.join()
 
-        send = getattr(self, method)
+        send_method = getattr(self, method)
 
         if banner['media_type']:
-            await send(target, f'media/banner/banner.{banner["media_ext"]}', banner['text'])
+            await send_method(target, f'media/banner/banner.{banner["media_ext"]}', banner['text'])
         else:
-            await send(target, banner['text'])
+            await send_method(target, banner['text'])
         return True

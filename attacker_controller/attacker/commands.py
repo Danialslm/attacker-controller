@@ -4,11 +4,11 @@ import re
 from typing import Union, Tuple
 
 from decouple import config
-from pyrogram import Client
+from pyrogram import Client, filters
 from pyrogram.errors import exceptions
 from pyrogram.types import Message, SentCode
 
-from attacker_controller import logger
+from attacker_controller import logger, MAIN_ADMINS
 from attacker_controller.attacker import Attacker
 from attacker_controller.attacker.exceptions import AttackerNotFound
 from attacker_controller.utils import (
@@ -16,6 +16,7 @@ from attacker_controller.utils import (
     get_send_method_by_media_type,
     get_message_file_extension,
 )
+from attacker_controller.utils.custom_filters import admin
 
 LOGGING_ATTACKER: Union[Client, None] = None
 
@@ -108,6 +109,12 @@ async def _update_attacker(phone: str, field: str, value: str) -> Union[bool, Tu
     return succeed
 
 
+@Client.on_message(
+    filters.regex(r'^\/sendcode (\+\d+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
 async def send_code(client: Client, message: Message):
     """
     Send Login code to given phone number.
@@ -152,6 +159,12 @@ async def send_code(client: Client, message: Message):
         await msg.edit('کد به صورت {} ارسال شد.'.format(type_text))
 
 
+@Client.on_message(
+    filters.regex(r'^\/login (\+\d+) (.+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
 async def login_attacker(client: Client, message: Message):
     """
     Login to account by provided credentials.
@@ -205,6 +218,12 @@ async def login_attacker(client: Client, message: Message):
         LOGGING_ATTACKER = None
 
 
+@Client.on_message(
+    filters.command('attackerlist') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
 async def attacker_list(client: Client, message: Message):
     """
     Get list of attackers phone.
@@ -218,6 +237,12 @@ async def attacker_list(client: Client, message: Message):
     await message.reply_text(text)
 
 
+@Client.on_message(
+    filters.regex(r'^\/removeattacker (\+\d+(?:\s+\+\d+)*)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
 async def remove_attacker(client: Client, message: Message):
     """
     Remove given phone from attacker list.
@@ -229,6 +254,12 @@ async def remove_attacker(client: Client, message: Message):
     await message.reply_text('شماره(های) داده شده از لیست اتکر‌ها حذف شد.')
 
 
+@Client.on_message(
+    filters.command('cleanattackers') &
+    filters.group &
+    ~filters.edited &
+    filters.user(MAIN_ADMINS)
+)
 async def clean_attacker_list(client: Client, message: Message):
     """
     Remove all attackers.
@@ -243,6 +274,13 @@ async def clean_attacker_list(client: Client, message: Message):
     await message.reply_text('تمام اتکرها از ربات پاک شدند.')
 
 
+@Client.on_message(
+    filters.command('setfirstnameall') &
+    filters.group &
+    ~filters.edited &
+    filters.reply &
+    admin
+)
 async def set_first_name_all(client: Client, message: Message):
     """
     Set a first name for all attackers.
@@ -266,6 +304,13 @@ async def set_first_name_all(client: Client, message: Message):
     await msg.edit(text, parse_mode='markdown')
 
 
+@Client.on_message(
+    filters.command('setlastnameall') &
+    filters.group &
+    ~filters.edited &
+    filters.reply &
+    admin
+)
 async def set_last_name_all(client: Client, message: Message):
     """
     Set a last name for all attackers.
@@ -289,6 +334,13 @@ async def set_last_name_all(client: Client, message: Message):
     await msg.edit(text, parse_mode='markdown')
 
 
+@Client.on_message(
+    filters.command('setbioall') &
+    filters.group &
+    ~filters.edited &
+    filters.reply &
+    admin
+)
 async def set_bio_all(client: Client, message: Message):
     """
     Set a bio for all attackers.
@@ -312,6 +364,13 @@ async def set_bio_all(client: Client, message: Message):
     await msg.edit(text, parse_mode='markdown')
 
 
+@Client.on_message(
+    filters.command('setprofileall') &
+    filters.group &
+    ~filters.edited &
+    filters.reply &
+    admin
+)
 async def set_profile_photo_all(client: Client, message: Message):
     """
     Set a profile photo for all attackers.
@@ -342,6 +401,12 @@ async def set_profile_photo_all(client: Client, message: Message):
     await msg.edit(text, parse_mode='markdown')
 
 
+@Client.on_message(
+    filters.regex(r'^\/setfirstname (\+\d+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
 async def set_first_name(client: Client, message: Message):
     """
     Start first name for a specific attacker.
@@ -366,6 +431,12 @@ async def set_first_name(client: Client, message: Message):
             await msg.edit('مشکلی در تغییر نام کوچک اتکر {} به وجود آمد.'.format(phone))
 
 
+@Client.on_message(
+    filters.regex(r'^\/setlastname (\+\d+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
 async def set_last_name(client: Client, message: Message):
     """
     Start last name for a specific attacker.
@@ -390,6 +461,12 @@ async def set_last_name(client: Client, message: Message):
             await msg.edit('مشکلی در تغییر نام خانوادگی اتکر {} به وجود آمد.'.format(phone))
 
 
+@Client.on_message(
+    filters.regex(r'^\/setbio (\+\d+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
 async def set_bio(client: Client, message: Message):
     """
     Start bio for a specific attacker.
@@ -414,6 +491,12 @@ async def set_bio(client: Client, message: Message):
             await msg.edit('مشکلی در تغییر بیو اتکر {} به وجود آمد.'.format(phone))
 
 
+@Client.on_message(
+    filters.regex(r'^\/setprofile (\+\d+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
 async def set_profile_photo(client: Client, message: Message):
     """
     Start profile photo for a specific attacker.
@@ -446,6 +529,12 @@ async def set_profile_photo(client: Client, message: Message):
         os.remove('media/profile_photo.jpg')
 
 
+@Client.on_message(
+    filters.regex(r'^\/setusername (\+\d+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
 async def set_username(client: Client, message: Message):
     """
     Start username for a specific attacker.
@@ -474,6 +563,12 @@ async def set_username(client: Client, message: Message):
             )
 
 
+@Client.on_message(
+    filters.regex(r'^\/members (\+\d+) @?(.*) (\d+)$') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
 async def get_group_members(client: Client, message: Message):
     """
     Get list of group members.
@@ -533,6 +628,13 @@ async def get_group_members(client: Client, message: Message):
         await message.reply_text('فرایند گرفتن ممبرهای گروه {} تمام شد.'.format(group_id))
 
 
+@Client.on_message(
+    filters.command('setbanner') &
+    filters.group &
+    ~filters.edited &
+    filters.reply &
+    admin
+)
 async def set_banner(client: Client, message: Message):
     """
     Set a new banner.
@@ -568,6 +670,12 @@ async def set_banner(client: Client, message: Message):
     await message.reply_text('بنر با موفقیت ذخیره شد.')
 
 
+@Client.on_message(
+    filters.command('banner') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
 async def get_current_banner(client: Client, message: Message):
     """
     Show the current banner.
@@ -618,6 +726,13 @@ async def start_attack(attacker: Attacker, message: Message, targets: list, meth
     return succeed_attacks
 
 
+@Client.on_message(
+    filters.regex(r'^\/attack (\+\d+)$') &
+    filters.group &
+    ~filters.edited &
+    filters.reply &
+    admin
+)
 async def attack(client: Client, message: Message):
     """
     Attack to a list of users or groups.

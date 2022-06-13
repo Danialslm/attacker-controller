@@ -3,7 +3,6 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 
 from attacker_controller import MAIN_ADMINS
-from attacker_controller.attacker import handlers
 from attacker_controller.utils import storage
 
 app = Client(
@@ -11,6 +10,7 @@ app = Client(
     api_id=config('api_id', cast=int),
     api_hash=config('api_hash'),
     bot_token=config('bot_token'),
+    plugins={'root': 'attacker_controller.attacker'}
 )
 
 
@@ -97,25 +97,5 @@ async def help_commands(client: Client, message: Message):
 """
     await message.reply_text(text)
 
-
-# add handlers
-app.add_handler(handlers.send_code_handler)
-app.add_handler(handlers.login_attacker_handler)
-app.add_handler(handlers.attacker_list_handler)
-app.add_handler(handlers.remove_attacker_handler)
-app.add_handler(handlers.clean_attacker_list_handler)
-app.add_handler(handlers.set_first_name_all_handler)
-app.add_handler(handlers.set_last_name_all_handler)
-app.add_handler(handlers.set_bio_all_handler)
-app.add_handler(handlers.set_profile_photo_all_handler)
-app.add_handler(handlers.set_first_name_handler)
-app.add_handler(handlers.set_last_name_handler)
-app.add_handler(handlers.set_bio_handler)
-app.add_handler(handlers.set_profile_photo_handler)
-app.add_handler(handlers.set_username_handler)
-app.add_handler(handlers.get_group_members_handler)
-app.add_handler(handlers.set_banner_handler)
-app.add_handler(handlers.get_current_banner_handler)
-app.add_handler(handlers.set_attack_handler)
 
 app.run()

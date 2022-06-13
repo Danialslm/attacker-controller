@@ -126,7 +126,7 @@ async def send_code(client: Client, message: Message):
 
     phone = message.matches[0].group(1)
 
-    msg = await message.reply_text('درحال ارسال درخواست. لطفا صبر کنید...')
+    status_msg = await message.reply_text('درحال ارسال درخواست. لطفا صبر کنید...')
 
     LOGGING_ATTACKER = Client(
         f'attacker_controller/sessions/attackers/{phone}',
@@ -134,8 +134,18 @@ async def send_code(client: Client, message: Message):
         api_hash=config('api_hash'),
     )
     await LOGGING_ATTACKER.connect()
+    code_sent = False
     try:
         sent_code: SentCode = await LOGGING_ATTACKER.send_code(phone)
+        code_sent = True
+    except exceptions.FloodWait as e:
+        await status_msg.edit('ارسال درخواست با محدودیت مواجه شده است. لطفا {} ثانیه دیگر امتحان کنید.'.format(e.x))
+    except exceptions.PhoneNumberInvalid:
+        await status_msg.edit('شماره وارد شده نادرست است.')
+    except Exception as e:
+        exception_class = e.__class__.__name__
+        await status_msg.edit('خطای غیر منتظره‌ای هنگام ارسال کد رخ داده است. {} - {}'.format(exception_class, e))
+    else:
         if sent_code.type == 'app':
             type_text = 'پیام در پیوی تلگرام'
         elif sent_code.type == 'sms':
@@ -144,19 +154,15 @@ async def send_code(client: Client, message: Message):
             type_text = 'تماس تلفنی'
         else:
             type_text = sent_code.type
-
-    except exceptions.FloodWait as e:
-        await msg.edit('ارسال درخواست با محدودیت مواجه شده است. لطفا {} ثانیه دیگر امتحان کنید.'.format(e.x))
-        await LOGGING_ATTACKER.disconnect()
-        _remove_attacker_session(phone)
-    except exceptions.PhoneNumberInvalid:
-        await msg.edit('شماره وارد شده نادرست است.')
-        await LOGGING_ATTACKER.disconnect()
-        _remove_attacker_session(phone)
-    else:
         # store phone code hash for one minute
         await storage.redis.set(f'phone_code_hash:{phone}', sent_code.phone_code_hash, 60)
-        await msg.edit('کد به صورت {} ارسال شد.'.format(type_text))
+        await status_msg.edit('کد به صورت {} ارسال شد.'.format(type_text))
+    finally:
+        # only if the code didn't send, disconnect the client
+        # because we need the client in next step which is login
+        if not code_sent:
+            await LOGGING_ATTACKER.disconnect()
+            _remove_attacker_session(phone)
 
 
 @Client.on_message(
@@ -170,8 +176,8 @@ async def login_attacker(client: Client, message: Message):
     Login to account by provided credentials.
     """
     global LOGGING_ATTACKER
-    # user should request for sending login code before logging
-    if not LOGGING_ATTACKER:
+    # user must requested for login code
+    if LOGGING_ATTACKER is None:
         await message.reply_text('مطمئن باشید قبل از لاگین به اکانت درخواست ارسال کد را کرده اید.')
         return
 
@@ -180,10 +186,23 @@ async def login_attacker(client: Client, message: Message):
 
     args = message.matches[0].group(2).split()
     code, password = args[0], None
+    # set the password if the user provided it
     if len(args) == 2:
         password = args[1]
 
-    msg = await message.reply_text('درحال لاگین با اطلاعات داده شده...')
+    status_msg = await message.reply_text('درحال لاگین با اطلاعات داده شده...')
+
+    async def _check_password():
+        if password is not None:
+            try:
+                await LOGGING_ATTACKER.check_password(password)
+            except (exceptions.PasswordHashInvalid, exceptions.BadRequest):
+                await status_msg.edit('پسورد اشتباه است!')
+            else:
+                await status_msg.edit(await _web_login(phone))
+                await LOGGING_ATTACKER.disconnect()
+        else:
+            await status_msg.edit('اکانت دارای پسورد می‌باشد. لطفا پسورد را بعد از کد با یک فاصله ارسال کنید.')
 
     try:
         await LOGGING_ATTACKER.sign_in(phone, phone_code_hash, code)
@@ -192,30 +211,19 @@ async def login_attacker(client: Client, message: Message):
             exceptions.PhoneCodeEmpty,
             exceptions.PhoneCodeInvalid,
     ):
-        await msg.edit('کد منقضی یا اشتباه است.')
+        await status_msg.edit('کد منقضی یا اشتباه است.')
     except exceptions.PhoneNumberUnoccupied:
-        await msg.edit('شماره تلفن در تلگرام ثبت نشده است.')
-        await LOGGING_ATTACKER.disconnect()
-        _remove_attacker_session(phone)
-        LOGGING_ATTACKER = None
+        await status_msg.edit('شماره تلفن هنوز استفاده نمی‌شود.')
     except exceptions.SignInFailed:
-        await msg.edit('فرایند لاگین به مشکل خورد! لطفا دوباره امتحان کنید.')
+        await status_msg.edit('فرایند لاگین ناموفق بود.')
     except exceptions.SessionPasswordNeeded:
-        if password is not None:
-            try:
-                await LOGGING_ATTACKER.check_password(password)
-            except (exceptions.PasswordHashInvalid, exceptions.BadRequest):
-                await msg.edit('پسورد اشتباه است!')
-            else:
-                await msg.edit(await _web_login(phone))
-                await LOGGING_ATTACKER.disconnect()
-                LOGGING_ATTACKER = None
-        else:
-            await msg.edit('اکانت دارای پسورد می‌باشد. لطفا پسورد را بعد از کد با یک فاصله ارسال کنید.')
+        await _check_password()
+    except Exception as e:
+        exception_class = e.__class__.__name__
+        await status_msg.edit('خطای غیر منتظره‌ای هنگام ارسال کد رخ داده است. {} - {}'.format(exception_class, e))
     else:
-        await msg.edit(await _web_login(phone))
+        await status_msg.edit(await _web_login(phone))
         await LOGGING_ATTACKER.disconnect()
-        LOGGING_ATTACKER = None
 
 
 @Client.on_message(

@@ -14,7 +14,6 @@ from attacker_controller.attacker.exceptions import AttackerNotFound
 from attacker_controller.utils import (
     storage, auth,
     get_send_method_by_media_type,
-    get_message_file_extension,
 )
 from attacker_controller.utils.custom_filters import admin
 
@@ -576,7 +575,8 @@ async def get_group_members(client: Client, message: Message):
             'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
     except Exception as e:
         exception_class = e.__class__.__name__
-        await status_msg.edit('خطای غیر منتظره ای هنگام انجام عملیات رخ داده است.\n {}  - {}'.format(exception_class, e))
+        await status_msg.edit(
+            'خطای غیر منتظره ای هنگام انجام عملیات رخ داده است.\n {}  - {}'.format(exception_class, e))
     else:
         # if any members still left
         if text:
@@ -610,9 +610,6 @@ async def start_attack(attacker: Attacker, message: Message, targets: list, meth
             targets = targets[index:]
             succeed_attacks += await start_attack(attacker, message, targets, method, banner)
             break
-        except exceptions.PeerFlood:
-            await message.edit('درحال حاظر این اتکر به محدود شده است.')
-            break
     return succeed_attacks
 
 
@@ -640,17 +637,27 @@ async def attack(client: Client, message: Message):
     if not targets:
         return
 
-    msg = await message.reply_text('درحال اتک به لیست با شماره {}. لطفا صبر کنید...'.format(phone))
+    status_msg = await message.reply_text('درحال اتک به لیست با شماره {}. لطفا صبر کنید...'.format(phone))
 
     banner = await storage.redis.hgetall('banner')
     method = get_send_method_by_media_type(banner['media_type'])
 
     try:
         async with await Attacker.init(phone) as attacker:
-            await storage.redis.sadd('attacking_attackers', attacker.phone)
-            succeed_attacks = await start_attack(attacker, msg, targets, method, banner)
-            await storage.redis.srem('attacking_attackers', attacker.phone)
+            await storage.redis.sadd('attacking_attackers', phone)
+            succeed_attacks = await start_attack(attacker, status_msg, targets, method, banner)
     except AttackerNotFound as e:
-        await msg.edit(e.message)
+        await status_msg.edit(e.message)
+    except exceptions.AuthKeyUnregistered:
+        await status_msg.edit(
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
+    except exceptions.PeerFlood:
+        await status_msg.edit('درحال حاظر این اتکر محدود شده است لطفا بعدا تلاش کنید.')
+    except Exception as e:
+        exception_class = e.__class__.__name__
+        await status_msg.edit(
+            'خطای غیر منتظره ای هنگام انجام عملیات رخ داده است.\n {}  - {}'.format(exception_class, e))
     else:
-        await msg.edit('اتک تمام شد. تعداد اتک های موفق: {}.'.format(succeed_attacks))
+        await status_msg.edit('اتک تمام شد. تعداد اتک های موفق: {}.'.format(succeed_attacks))
+    finally:
+        await storage.redis.srem('attacking_attackers', phone)

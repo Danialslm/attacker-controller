@@ -5,7 +5,10 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 
 from attacker_controller import MAIN_ADMINS
-from attacker_controller.utils import storage, remove_attacker_session
+from attacker_controller.utils import (
+    remove_attacker_session, get_message_file_extension,
+    get_send_method_by_media_type, storage,
+)
 from attacker_controller.utils.custom_filters import admin
 
 app = Client(
@@ -108,6 +111,73 @@ async def clean_attacker_list(client: Client, message: Message):
             remove_attacker_session(file)
 
     await message.reply_text('تمام اتکرها از ربات پاک شدند.')
+
+
+@app.on_message(
+    filters.command('setbanner') &
+    filters.group &
+    ~filters.edited &
+    filters.reply &
+    admin
+)
+async def set_banner(client: Client, message: Message):
+    """
+    Set a new banner.
+    """
+    # remove previous banner file
+    for _, __, files in os.walk('media/banner'):
+        for file in files:
+            os.remove(f'media/banner/{file}')
+
+    banner = message.reply_to_message
+    # get and save media if message has
+    media = (
+            banner.photo or banner.video or
+            banner.animation or banner.voice or
+            banner.sticker
+    )
+    banner_media_ext = ''
+    if media:
+        # media file extension
+        banner_media_ext = get_message_file_extension(banner)
+
+        await message.reply_to_message.download(file_name=f'media/banner/banner.{banner_media_ext}')
+
+    banner_media_type = banner.media or ''
+    banner_text = message.reply_to_message.caption or message.reply_to_message.text or ''
+
+    # store the banner in cache
+    await storage.redis.hset('banner', mapping={
+        'text': banner_text,
+        'media_ext': banner_media_ext,
+        'media_type': banner_media_type
+    })
+    await message.reply_text('بنر با موفقیت ذخیره شد.')
+
+
+@app.on_message(
+    filters.command('banner') &
+    filters.group &
+    ~filters.edited &
+    admin
+)
+async def get_current_banner(client: Client, message: Message):
+    """
+    Show the current banner.
+    """
+    banner = await storage.redis.hgetall('banner')
+
+    if not banner:
+        await message.reply_text('بنری ست نشده است.')
+        return
+
+    method = get_send_method_by_media_type(banner['media_type'])
+
+    send_method = getattr(client, method)
+    if banner['media_type']:
+        await send_method(message.chat.id, f'media/banner/banner.{banner["media_ext"]}', banner['text'])
+    else:
+        await send_method(message.chat.id, banner['text'])
 
 
 @app.on_message(

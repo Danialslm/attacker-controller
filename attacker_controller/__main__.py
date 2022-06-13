@@ -5,6 +5,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 
 from attacker_controller import MAIN_ADMINS
+from attacker_controller.attacker import Attacker
 from attacker_controller.utils import (
     remove_attacker_session, get_message_file_extension,
     get_send_method_by_media_type, storage,
@@ -90,8 +91,13 @@ async def remove_attacker(client: Client, message: Message):
     """ Remove given phone(s) from attacker list. """
     phones = message.matches[0].group(1).split()
     for phone in phones:
-        await storage.remove_attacker(phone)
+        try:
+            async with await Attacker.init(phone) as attacker:
+                await attacker.log_out()
+        except:
+            pass
         remove_attacker_session(phone)
+        await storage.remove_attacker(phone)
     await message.reply_text('شماره(های) داده شده از لیست اتکر‌ها حذف شد.')
 
 
@@ -103,12 +109,14 @@ async def remove_attacker(client: Client, message: Message):
 )
 async def clean_attacker_list(client: Client, message: Message):
     """ Remove all attackers. """
-    for attacker_phone in await storage.get_attackers():
-        await storage.remove_attacker(attacker_phone)
-
-    for _, __, files in os.walk('attacker_controller/sessions/attackers/'):
-        for file in files:
-            remove_attacker_session(file)
+    for phone in await storage.get_attackers():
+        try:
+            async with await Attacker.init(phone) as attacker:
+                await attacker.log_out()
+        except:
+            pass
+        remove_attacker_session(phone)
+        await storage.remove_attacker(phone)
 
     await message.reply_text('تمام اتکرها از ربات پاک شدند.')
 

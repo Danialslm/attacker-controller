@@ -516,7 +516,13 @@ async def get_group_members(client: Client, message: Message):
     Get list of group members.
     """
     phone = message.matches[0].group(1)
-    group_id = message.matches[0].group(2).replace('https://t.me/', '')
+    group_id = message.matches[0].group(2)
+    # if the link was not for a private group
+    if 'joinchat' not in group_id:
+        group_id = group_id.replace('https://t.me/', '')
+        private_target = False
+    else:
+        private_target = True
     limit = int(message.matches[0].group(3))
 
     status_msg = await message.reply_text('درحال گرفتن لیست ممبر های گروه. لطفا صبر کنید...')
@@ -525,21 +531,30 @@ async def get_group_members(client: Client, message: Message):
     if group_id.lstrip('-').isdigit():
         group_id = int(group_id)
 
-    # only can get groups member
-    try:
-        target_chat = await client.get_chat(group_id)
-    except exceptions.PeerIdInvalid:
-        await status_msg.edit('ایدی نامعتبر است.')
-        return
-    else:
-        if target_chat.type not in ['group', 'supergroup']:
-            await status_msg.edit('هدف گروه یا سوپرگروه نیست.')
+    if not private_target:
+        # only can get groups member
+        try:
+            target_chat = await client.get_chat(group_id)
+        except exceptions.PeerIdInvalid:
+            await status_msg.edit('ایدی نامعتبر است.')
             return
+        else:
+            if target_chat.type not in ['group', 'supergroup']:
+                await status_msg.edit('هدف گروه یا سوپرگروه نیست.')
+                return
 
     member_counter = 0
     text = ''
     try:
         async with await Attacker.init(phone) as attacker:
+            # join or get the private chat to access its chat id
+            if private_target:
+                try:
+                    target_chat = await attacker.join_chat(group_id)
+                except exceptions.UserAlreadyParticipant:
+                    target_chat = await attacker.get_chat(group_id)
+                group_id = target_chat.id
+
             async for member in attacker.iter_chat_members(group_id, limit=limit):
                 # don't capture the bots and the users that doesn't have username
                 if member.user.is_bot or not member.user.username:

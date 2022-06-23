@@ -587,17 +587,20 @@ async def get_group_members(client: Client, message: Message):
         await message.reply_text('فرایند گرفتن ممبرهای گروه {} تمام شد.'.format(group_id))
 
 
-async def start_attack(attacker: Attacker, message: Message, targets: list, method: str, banner: dict) -> int:
+async def start_attack(
+    attacker: Attacker, message: Message,
+    targets: list, method: str, banner: dict,
+) -> Tuple[int, bool]:
     """
     Start attacking on given targets.
 
     If any FloodWait error occurred during attack, wait as long as flood wait time and
     get start where the flood occurred.
 
-    Returns number of succeed attacks.
+    :returns: (number of successes, is peer flooded)
     """
     succeed_attacks = 0
-
+    peer_flood = False
     for index, target in enumerate(targets):
         try:
             succeed_attacks += await attacker.attack(target, method, banner)
@@ -610,9 +613,13 @@ async def start_attack(attacker: Attacker, message: Message, targets: list, meth
             )
             await asyncio.sleep(e.x)
             targets = targets[index:]
-            succeed_attacks += await start_attack(attacker, message, targets, method, banner)
+            _succeed_attacks, _ = await start_attack(attacker, message, targets, method, banner)
+            succeed_attacks += _succeed_attacks
             break
-    return succeed_attacks
+        except exceptions.PeerFlood:
+            peer_flood = True
+            break
+    return succeed_attacks, peer_flood
 
 
 @Client.on_message(
@@ -647,19 +654,24 @@ async def attack(client: Client, message: Message):
     try:
         async with await Attacker.init(phone) as attacker:
             await storage.redis.sadd('attacking_attackers', phone)
-            succeed_attacks = await start_attack(attacker, status_msg, targets, method, banner)
+            succeed_attacks, is_flooded = await start_attack(attacker, status_msg, targets, method, banner)
     except AttackerNotFound as e:
         await status_msg.edit(e.message)
     except exceptions.AuthKeyUnregistered:
         await status_msg.edit(
             'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
-    except exceptions.PeerFlood:
-        await status_msg.edit('درحال حاظر این اتکر محدود شده است لطفا بعدا تلاش کنید.')
     except Exception as e:
         exception_class = e.__class__.__name__
         await status_msg.edit(
             'خطای غیر منتظره ای هنگام انجام عملیات رخ داده است.\n {}  - {}'.format(exception_class, e))
     else:
-        await status_msg.edit('اتک تمام شد. تعداد اتک های موفق: {}.'.format(succeed_attacks))
+        if is_flooded:
+            if succeed_attacks > 0:
+                text = 'اتکر در حین اتک به محدودیت خورد. تعداد اتک های موفق: {}.'.format(succeed_attacks)
+            else:
+                text = 'اتکر به محدودیت خورده است.'
+        else:
+            text = 'اتک تمام شد. تعداد اتک های موفق: {}.'.format(succeed_attacks)
+        await status_msg.edit(text)
     finally:
         await storage.redis.srem('attacking_attackers', phone)

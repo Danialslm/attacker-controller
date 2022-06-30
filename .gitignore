@@ -7,3 +7,4 @@ __pycache__/
 !.gitkeep
 media
 error.log
+.vscode/

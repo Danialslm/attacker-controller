@@ -640,6 +640,12 @@ async def attack(client: Client, message: Message):
         await message.reply_text('درحال حاضر این اتکر درحال اتک است.')
         return
 
+    # check banner was set
+    banner = await storage.redis.hgetall('banner')
+    if not bool(banner):
+        await message.reply('درحال حاظر بنری برای ربات تنظیم نشده است.')
+        return
+
     # get usernames and ids from replied text
     targets = re.findall(r'(?<=@)\w{5,}|\d{6,}', message.reply_to_message.text)
 
@@ -647,10 +653,7 @@ async def attack(client: Client, message: Message):
         return
 
     status_msg = await message.reply_text('درحال اتک به لیست با شماره {}. لطفا صبر کنید...'.format(phone))
-
-    banner = await storage.redis.hgetall('banner')
     method = get_send_method_by_media_type(banner['media_type'])
-
     try:
         async with await Attacker.init(phone) as attacker:
             await storage.redis.sadd('attacking_attackers', phone)

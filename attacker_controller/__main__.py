@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 from decouple import config
@@ -64,6 +65,25 @@ async def admin_list(client: Client, message: Message):
     await message.reply_text(text)
 
 
+async def check_peer_flood(attacker_phone: str):
+    """
+    Check the attacker has any limitation with @spambot.
+    
+    Return True if the given attacker is limited and False if it isn't.
+    """
+    async with await Attacker.init(attacker_phone) as attacker:
+        await attacker.send_message('spambot', '/start')
+
+        # sleep for a while to get spambot reply
+        await asyncio.sleep(1)
+        spam_bot_reply = await attacker.get_history('spambot', limit=1)
+        spam_bot_reply_text = spam_bot_reply[0].text
+        if 'no limits' in spam_bot_reply_text:
+            return False
+
+        return True
+
+
 @app.on_message(
     filters.command('attackerlist') &
     filters.group &
@@ -71,15 +91,24 @@ async def admin_list(client: Client, message: Message):
     admin
 )
 async def attacker_list(client: Client, message: Message):
-    """ Send list of attackers phone. """
+    """
+    Send list of attackers phone.
+    Also specify that is attacker flooded.
+    """
     text = 'لیست اتکرها : \n\n'
     attackers = await storage.get_attackers()
-    attacker_counter = 0
-    for attacker in attackers:
-        attacker_counter += 1
-        text += f'{attacker_counter} - `{attacker}`\n'
-    await message.reply_text(text)
+    tasks = [
+        asyncio.create_task(check_peer_flood(attacker))
+        for attacker in attackers
+    ]
+    peer_flood_result = await asyncio.gather(*tasks)
 
+    attacker_counter = 0
+    for attacker, flooded in zip(attackers, peer_flood_result):
+        attacker_counter += 1
+        text += f'{attacker_counter} - `{attacker}`' + (' (limited)\n' if flooded else '\n')
+
+    await message.reply(text)
 
 @app.on_message(
     filters.regex(r'^\/removeattacker (\+\d+(?:\s+\+\d+)*)$') &

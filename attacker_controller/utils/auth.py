@@ -70,10 +70,12 @@ async def _get_api_id_and_api_hash(
             app_hash = soup.find("input", {"name": "hash"}).get("value")
             if await _create_application(session, stel_token, app_hash):
                 api_id, api_hash = await _get_api_id_and_api_hash(session, stel_token)
-        else:
+        elif page_title == 'App configuration':
             inputs = soup.find_all("span", {"class": "input-xlarge"})
             api_id = inputs[0].string
             api_hash = inputs[1].string
+        else:
+            res.raise_for_status()
         return api_id, api_hash
 
 
@@ -148,9 +150,13 @@ async def login(phone: str, password: str) -> Tuple[bool, str]:
                         # get telegram cookie after login
                         stel_token = res.cookies.get('stel_token').value
 
-                        api_id, api_hash = await _get_api_id_and_api_hash(
+                        result = await _get_api_id_and_api_hash(
                             session, stel_token
                         )
+                        if result:
+                            api_id, api_hash = result
+                        else:
+                            return False, 'مشکلی در گرفتن api id و api hash وجود دارد.'
                         await add_new_attacker(phone, api_id, api_hash)
                         return True, None
 

@@ -163,14 +163,15 @@ async def send_code(client: Client, message: Message):
 async def login_attacker(client: Client, message: Message):
     """Login to account by provided credentials."""
     global LOGGING_ATTACKER
-    # user must requested for login code
-    if LOGGING_ATTACKER is None:
+
+    phone = message.matches[0].group(1)
+    # user must requested login code for the phone
+    if LOGGING_ATTACKER is None or LOGGING_ATTACKER.phone != phone:
         await message.reply_text(
-            'مطمئن باشید قبل از لاگین به اکانت درخواست ارسال کد را کرده اید.'
+            'مطمئن باشید قبل از لاگین به اکانت درخواست ارسال کد برای این شماره را کرده اید.'
         )
         return
 
-    phone = message.matches[0].group(1)
     phone_code_hash = await storage.redis.get(f'phone_code_hash:{phone}') or ''
 
     args = message.matches[0].group(2).split()

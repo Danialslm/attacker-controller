@@ -92,7 +92,7 @@ async def _update_attacker(
         elif field == 'username':
             succeed = await attacker.update_username(value)
         else:
-            return False
+            succeed = False
     return succeed
 
 

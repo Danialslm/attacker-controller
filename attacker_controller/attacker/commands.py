@@ -26,7 +26,7 @@ async def _web_login(phone: str) -> str:
     """Login to the web application by given phone."""
     global LOGGING_ATTACKER
 
-    async def _error(err_reason):
+    def _error(err_reason):
         return (
             'خطایی هنگام گرفتن api id و api hash به وجود آمد و اکانت لاگ اوت شد.\n'
             'دلیل خطا:\n{}'.format(err_reason)
@@ -47,9 +47,9 @@ async def _web_login(phone: str) -> str:
 
     if not res[0]:
         # logging to web was failed
-        return await _error(res[1])
+        return _error(res[1])
     else:
-        return 'فرایند به اتمام رسید و {}'.format(res[1])
+        return 'فرایند به اتمام رسید و شماره ارسال شده به لیست اتکرها افزوده شد.'
 
 
 async def _update_all_attackers(field: str, value: str) -> Tuple[int, list]:

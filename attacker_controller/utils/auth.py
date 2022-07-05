@@ -112,8 +112,7 @@ async def login(phone: str, password: str) -> Tuple[bool, str]:
     Login account by provided credentials.
 
     returns:
-        bool: shows that the request was successful or not.
-        str: response text
+        tuple - contains a bool that shows the process was successful or not and error response.
 
     URL: https://my.telegram.org/auth/login
     """
@@ -145,7 +144,7 @@ async def login(phone: str, password: str) -> Tuple[bool, str]:
                             session, stel_token
                         )
                         await add_new_attacker(phone, api_id, api_hash)
-                        return True, 'شماره ارسال شده به لیست اتکرها اضافه شد.'
+                        return True, None
 
                 res_text = await res.read()
                 message = f'{res_text.decode()}خروجی غیرمنتظره! ریسپانس تلگرام :\n '

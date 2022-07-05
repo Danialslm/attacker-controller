@@ -74,6 +74,7 @@ async def check_peer_flood(attacker_phone: str):
     Return True if the given attacker is limited and False if it isn't.
     """
     async with await Attacker.init(attacker_phone) as attacker:
+        await attacker.unblock_user('spambot')
         await attacker.send_message('spambot', '/start')
 
         # sleep for a while to get spambot reply

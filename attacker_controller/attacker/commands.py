@@ -28,7 +28,7 @@ async def _web_login(phone: str) -> str:
 
     def _error(err_reason):
         return (
-            'خطایی هنگام گرفتن api id و api hash به وجود آمد و اکانت لاگ اوت شد.\n'
+            'خطایی هنگام ورود به https://my.telegram.org به وجود آمد و اکانت لاگ اوت شد.\n'
             'دلیل خطا:\n{}'.format(err_reason)
         )
 

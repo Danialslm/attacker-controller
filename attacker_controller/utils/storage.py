@@ -40,7 +40,9 @@ async def add_new_attacker(phone: str, api_id: str, api_hash: str) -> int:
     Return 1 if key doesn't already exist or 0 if exists.
     """
     await redis.sadd('attackers', phone)
-    return await redis.hmset('attacker:' + phone, {'api_id': api_id, 'api_hash': api_hash})
+    return await redis.hmset(
+        'attacker:' + phone, {'api_id': api_id, 'api_hash': api_hash}
+    )
 
 
 async def get_attackers(phone: Optional[str] = None) -> Union[dict, set]:

@@ -12,8 +12,10 @@ from attacker_controller import logger
 from attacker_controller.attacker import Attacker
 from attacker_controller.attacker.exceptions import AttackerNotFound
 from attacker_controller.utils import (
-    storage, auth,
-    get_send_method_by_media_type, remove_attacker_session,
+    storage,
+    auth,
+    get_send_method_by_media_type,
+    remove_attacker_session,
 )
 from attacker_controller.utils.custom_filters import admin
 
@@ -21,9 +23,7 @@ LOGGING_ATTACKER: Union[Client, None] = None
 
 
 async def _web_login(phone: str) -> str:
-    """
-    Login to the web application by given phone.
-    """
+    """Login to the web application by given phone."""
     global LOGGING_ATTACKER
 
     async def _error(err_reason):
@@ -55,6 +55,7 @@ async def _web_login(phone: str) -> str:
 async def _update_all_attackers(field: str, value: str) -> Tuple[int, list]:
     """
     Update all available attackers.
+
     Return number of successes and Unsuccessful phone numbers.
     """
     number_of_successes = 0
@@ -75,9 +76,12 @@ async def _update_all_attackers(field: str, value: str) -> Tuple[int, list]:
     return number_of_successes, unsuccessful_phones
 
 
-async def _update_attacker(phone: str, field: str, value: str) -> Union[bool, Tuple[bool, str]]:
+async def _update_attacker(
+    phone: str, field: str, value: str
+) -> Union[bool, Tuple[bool, str]]:
     """
     Connect to attacker and update it by given field and value.
+
     Return True on success
     """
     async with await Attacker.init(phone) as attacker:
@@ -93,15 +97,10 @@ async def _update_attacker(phone: str, field: str, value: str) -> Union[bool, Tu
 
 
 @Client.on_message(
-    filters.regex(r'^\/sendcode (\+\d+)$') &
-    filters.group &
-    ~filters.edited &
-    admin
+    filters.regex(r'^\/sendcode (\+\d+)$') & filters.group & ~filters.edited & admin
 )
 async def send_code(client: Client, message: Message):
-    """
-    Send Login code to given phone number.
-    """
+    """Send Login code to given phone number."""
     global LOGGING_ATTACKER
     # if any connected attacker was left from previous login action, disconnect it
     if LOGGING_ATTACKER and LOGGING_ATTACKER.is_connected:
@@ -122,12 +121,20 @@ async def send_code(client: Client, message: Message):
         sent_code: SentCode = await LOGGING_ATTACKER.send_code(phone)
         code_sent = True
     except exceptions.FloodWait as e:
-        await status_msg.edit('ارسال درخواست با محدودیت مواجه شده است. لطفا {} ثانیه دیگر امتحان کنید.'.format(e.x))
+        await status_msg.edit(
+            'ارسال درخواست با محدودیت مواجه شده است. لطفا {} ثانیه دیگر امتحان کنید.'.format(
+                e.x
+            )
+        )
     except exceptions.PhoneNumberInvalid:
         await status_msg.edit('شماره وارد شده نادرست است.')
     except Exception as e:
         exception_class = e.__class__.__name__
-        await status_msg.edit('خطای غیر منتظره‌ای هنگام ارسال کد رخ داده است. {} - {}'.format(exception_class, e))
+        await status_msg.edit(
+            'خطای غیر منتظره‌ای هنگام ارسال کد رخ داده است. {} - {}'.format(
+                exception_class, e
+            )
+        )
     else:
         if sent_code.type == 'app':
             type_text = 'پیام در پیوی تلگرام'
@@ -138,7 +145,9 @@ async def send_code(client: Client, message: Message):
         else:
             type_text = sent_code.type
         # store phone code hash for one minute
-        await storage.redis.set(f'phone_code_hash:{phone}', sent_code.phone_code_hash, 60)
+        await storage.redis.set(
+            f'phone_code_hash:{phone}', sent_code.phone_code_hash, 60
+        )
         await status_msg.edit('کد به صورت {} ارسال شد.'.format(type_text))
     finally:
         # only if the code didn't send, disconnect the client
@@ -149,19 +158,16 @@ async def send_code(client: Client, message: Message):
 
 
 @Client.on_message(
-    filters.regex(r'^\/login (\+\d+) (.+)$') &
-    filters.group &
-    ~filters.edited &
-    admin
+    filters.regex(r'^\/login (\+\d+) (.+)$') & filters.group & ~filters.edited & admin
 )
 async def login_attacker(client: Client, message: Message):
-    """
-    Login to account by provided credentials.
-    """
+    """Login to account by provided credentials."""
     global LOGGING_ATTACKER
     # user must requested for login code
     if LOGGING_ATTACKER is None:
-        await message.reply_text('مطمئن باشید قبل از لاگین به اکانت درخواست ارسال کد را کرده اید.')
+        await message.reply_text(
+            'مطمئن باشید قبل از لاگین به اکانت درخواست ارسال کد را کرده اید.'
+        )
         return
 
     phone = message.matches[0].group(1)
@@ -185,14 +191,16 @@ async def login_attacker(client: Client, message: Message):
                 await status_msg.edit(await _web_login(phone))
                 await LOGGING_ATTACKER.disconnect()
         else:
-            await status_msg.edit('اکانت دارای پسورد می‌باشد. لطفا پسورد را بعد از کد با یک فاصله ارسال کنید.')
+            await status_msg.edit(
+                'اکانت دارای پسورد می‌باشد. لطفا پسورد را بعد از کد با یک فاصله ارسال کنید.'
+            )
 
     try:
         await LOGGING_ATTACKER.sign_in(phone, phone_code_hash, code)
     except (
-            exceptions.PhoneCodeExpired,
-            exceptions.PhoneCodeEmpty,
-            exceptions.PhoneCodeInvalid,
+        exceptions.PhoneCodeExpired,
+        exceptions.PhoneCodeEmpty,
+        exceptions.PhoneCodeInvalid,
     ):
         await status_msg.edit('کد منقضی یا اشتباه است.')
     except exceptions.PhoneNumberUnoccupied:
@@ -203,33 +211,41 @@ async def login_attacker(client: Client, message: Message):
         await _check_password()
     except Exception as e:
         exception_class = e.__class__.__name__
-        await status_msg.edit('خطای غیر منتظره‌ای هنگام ارسال کد رخ داده است. {} - {}'.format(exception_class, e))
+        await status_msg.edit(
+            'خطای غیر منتظره‌ای هنگام ارسال کد رخ داده است. {} - {}'.format(
+                exception_class, e
+            )
+        )
     else:
         await status_msg.edit(await _web_login(phone))
         await LOGGING_ATTACKER.disconnect()
 
 
 @Client.on_message(
-    filters.command('setfirstnameall') &
-    filters.group &
-    ~filters.edited &
-    filters.reply &
-    admin
+    filters.command('setfirstnameall')
+    & filters.group
+    & ~filters.edited
+    & filters.reply
+    & admin
 )
 async def set_first_name_all(client: Client, message: Message):
-    """
-    Set a first name for all attackers.
-    """
+    """Set a first name for all attackers."""
     provided_first_name = message.reply_to_message.text
     if not provided_first_name:
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
         return
 
-    status_msg = await message.reply_text('درحال تغییر نام کوچک اتکر‌ها. لطفا صبر کنید...')
+    status_msg = await message.reply_text(
+        'درحال تغییر نام کوچک اتکر‌ها. لطفا صبر کنید...'
+    )
 
-    number_of_successes, unsuccessful_phones = await _update_all_attackers('first_name', provided_first_name)
+    number_of_successes, unsuccessful_phones = await _update_all_attackers(
+        'first_name', provided_first_name
+    )
 
-    text = '{} اتکر نام کوچک‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_first_name)
+    text = '{} اتکر نام کوچک‌شان به **{}** تغییر یافت.'.format(
+        number_of_successes, provided_first_name
+    )
     if unsuccessful_phones:
         text += '\nمشکلی در تغییر نام کوچک اتکرهای زیر به وجود آمد.\n'
         text += '\n'.join(unsuccessful_phones)
@@ -238,26 +254,30 @@ async def set_first_name_all(client: Client, message: Message):
 
 
 @Client.on_message(
-    filters.command('setlastnameall') &
-    filters.group &
-    ~filters.edited &
-    filters.reply &
-    admin
+    filters.command('setlastnameall')
+    & filters.group
+    & ~filters.edited
+    & filters.reply
+    & admin
 )
 async def set_last_name_all(client: Client, message: Message):
-    """
-    Set a last name for all attackers.
-    """
+    """Set a last name for all attackers."""
     provided_last_name = message.reply_to_message.text
     if not provided_last_name:
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
         return
 
-    status_msg = await message.reply_text('درحال تغییر نام خانوادگی اتکر‌ها. لطفا صبر کنید...')
+    status_msg = await message.reply_text(
+        'درحال تغییر نام خانوادگی اتکر‌ها. لطفا صبر کنید...'
+    )
 
-    number_of_successes, unsuccessful_phones = await _update_all_attackers('last_name', provided_last_name)
+    number_of_successes, unsuccessful_phones = await _update_all_attackers(
+        'last_name', provided_last_name
+    )
 
-    text = '{} اتکر نام خانوادگی‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_last_name)
+    text = '{} اتکر نام خانوادگی‌شان به **{}** تغییر یافت.'.format(
+        number_of_successes, provided_last_name
+    )
     if unsuccessful_phones:
         text += '\nمشکلی در تغییر نام خانوادگی اتکرهای زیر به وجود آمد.\n'
         text += '\n'.join(unsuccessful_phones)
@@ -266,16 +286,14 @@ async def set_last_name_all(client: Client, message: Message):
 
 
 @Client.on_message(
-    filters.command('setbioall') &
-    filters.group &
-    ~filters.edited &
-    filters.reply &
-    admin
+    filters.command('setbioall')
+    & filters.group
+    & ~filters.edited
+    & filters.reply
+    & admin
 )
 async def set_bio_all(client: Client, message: Message):
-    """
-    Set a bio for all attackers.
-    """
+    """Set a bio for all attackers."""
     provided_bio = message.reply_to_message.text
     if not provided_bio:
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
@@ -283,9 +301,13 @@ async def set_bio_all(client: Client, message: Message):
 
     status_msg = await message.reply_text('درحال تغییر بیو اتکر‌ها. لطفا صبر کنید...')
 
-    number_of_successes, unsuccessful_phones = await _update_all_attackers('bio', provided_bio)
+    number_of_successes, unsuccessful_phones = await _update_all_attackers(
+        'bio', provided_bio
+    )
 
-    text = '{} اتکر بیو‌شان به **{}** تغییر یافت.'.format(number_of_successes, provided_bio)
+    text = '{} اتکر بیو‌شان به **{}** تغییر یافت.'.format(
+        number_of_successes, provided_bio
+    )
     if unsuccessful_phones:
         text += '\nمشکلی در تغییر بیو اتکرهای زیر به وجود آمد.\n'
         text += '\n'.join(unsuccessful_phones)
@@ -294,22 +316,22 @@ async def set_bio_all(client: Client, message: Message):
 
 
 @Client.on_message(
-    filters.command('setprofileall') &
-    filters.group &
-    ~filters.edited &
-    filters.reply &
-    admin
+    filters.command('setprofileall')
+    & filters.group
+    & ~filters.edited
+    & filters.reply
+    & admin
 )
 async def set_profile_photo_all(client: Client, message: Message):
-    """
-    Set a profile photo for all attackers.
-    """
+    """Set a profile photo for all attackers."""
     provided_photo = message.reply_to_message.photo
     if not provided_photo:
         await message.reply_text('لطفا روی یک عکس ریپلای بزنید و دستور را بفرستید.')
         return
 
-    status_msg = await message.reply_text('درحال تغییر عکس پروفایل اتکر‌ها. لطفا صبر کنید...')
+    status_msg = await message.reply_text(
+        'درحال تغییر عکس پروفایل اتکر‌ها. لطفا صبر کنید...'
+    )
 
     # download the photo
     provided_photo = await client.download_media(
@@ -317,7 +339,9 @@ async def set_profile_photo_all(client: Client, message: Message):
         file_name='media/profile_photo.jpg',
     )
 
-    number_of_successes, unsuccessful_phones = await _update_all_attackers('profile_photo', provided_photo)
+    number_of_successes, unsuccessful_phones = await _update_all_attackers(
+        'profile_photo', provided_photo
+    )
 
     text = '{} اتکر عکس پروفایل‌شان تغییر یافت.'.format(number_of_successes)
     if unsuccessful_phones:
@@ -329,15 +353,10 @@ async def set_profile_photo_all(client: Client, message: Message):
 
 
 @Client.on_message(
-    filters.regex(r'^\/setfirstname (\+\d+)$') &
-    filters.group &
-    ~filters.edited &
-    admin
+    filters.regex(r'^\/setfirstname (\+\d+)$') & filters.group & ~filters.edited & admin
 )
 async def set_first_name(client: Client, message: Message):
-    """
-    Start first name for a specific attacker.
-    """
+    """Start first name for a specific attacker."""
     phone = message.matches[0].group(1)
 
     provided_first_name = message.reply_to_message.text
@@ -345,7 +364,9 @@ async def set_first_name(client: Client, message: Message):
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
         return
 
-    status_msg = await message.reply_text('درحال تغییر نام کوچک اتکر {}. لطفا صبر کنید...'.format(phone))
+    status_msg = await message.reply_text(
+        'درحال تغییر نام کوچک اتکر {}. لطفا صبر کنید...'.format(phone)
+    )
 
     try:
         success = await _update_attacker(phone, 'first_name', provided_first_name)
@@ -353,24 +374,28 @@ async def set_first_name(client: Client, message: Message):
         await status_msg.edit(e.message)
     except exceptions.AuthKeyUnregistered:
         await status_msg.edit(
-            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(
+                phone
+            )
+        )
     else:
         if success:
-            await status_msg.edit('اتکر {} نام کوچکش به **{}** تغییر یافت.'.format(phone, provided_first_name))
+            await status_msg.edit(
+                'اتکر {} نام کوچکش به **{}** تغییر یافت.'.format(
+                    phone, provided_first_name
+                )
+            )
         else:
-            await status_msg.edit('مشکلی در تغییر نام کوچک اتکر {} به وجود آمد.'.format(phone))
+            await status_msg.edit(
+                'مشکلی در تغییر نام کوچک اتکر {} به وجود آمد.'.format(phone)
+            )
 
 
 @Client.on_message(
-    filters.regex(r'^\/setlastname (\+\d+)$') &
-    filters.group &
-    ~filters.edited &
-    admin
+    filters.regex(r'^\/setlastname (\+\d+)$') & filters.group & ~filters.edited & admin
 )
 async def set_last_name(client: Client, message: Message):
-    """
-    Start last name for a specific attacker.
-    """
+    """Start last name for a specific attacker."""
     phone = message.matches[0].group(1)
 
     provided_last_name = message.reply_to_message.text
@@ -378,7 +403,9 @@ async def set_last_name(client: Client, message: Message):
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
         return
 
-    status_msg = await message.reply_text('درحال تغییر نام خانوادگی اتکر {}. لطفا صبر کنید...'.format(phone))
+    status_msg = await message.reply_text(
+        'درحال تغییر نام خانوادگی اتکر {}. لطفا صبر کنید...'.format(phone)
+    )
 
     try:
         success = await _update_attacker(phone, 'last_name', provided_last_name)
@@ -386,24 +413,28 @@ async def set_last_name(client: Client, message: Message):
         await status_msg.edit(e.message)
     except exceptions.AuthKeyUnregistered:
         await status_msg.edit(
-            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(
+                phone
+            )
+        )
     else:
         if success:
-            await status_msg.edit('اتکر {} نام خانوادگی اش به **{}** تغییر یافت.'.format(phone, provided_last_name))
+            await status_msg.edit(
+                'اتکر {} نام خانوادگی اش به **{}** تغییر یافت.'.format(
+                    phone, provided_last_name
+                )
+            )
         else:
-            await status_msg.edit('مشکلی در تغییر نام خانوادگی اتکر {} به وجود آمد.'.format(phone))
+            await status_msg.edit(
+                'مشکلی در تغییر نام خانوادگی اتکر {} به وجود آمد.'.format(phone)
+            )
 
 
 @Client.on_message(
-    filters.regex(r'^\/setbio (\+\d+)$') &
-    filters.group &
-    ~filters.edited &
-    admin
+    filters.regex(r'^\/setbio (\+\d+)$') & filters.group & ~filters.edited & admin
 )
 async def set_bio(client: Client, message: Message):
-    """
-    Start bio for a specific attacker.
-    """
+    """Start bio for a specific attacker."""
     phone = message.matches[0].group(1)
 
     provided_bio = message.reply_to_message.text
@@ -411,7 +442,9 @@ async def set_bio(client: Client, message: Message):
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
         return
 
-    status_msg = await message.reply_text('درحال تغییر بیو اتکر {}. لطفا صبر کنید...'.format(phone))
+    status_msg = await message.reply_text(
+        'درحال تغییر بیو اتکر {}. لطفا صبر کنید...'.format(phone)
+    )
 
     try:
         success = await _update_attacker(phone, 'bio', provided_bio)
@@ -419,24 +452,26 @@ async def set_bio(client: Client, message: Message):
         await status_msg.edit(e.message)
     except exceptions.AuthKeyUnregistered:
         await status_msg.edit(
-            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(
+                phone
+            )
+        )
     else:
         if success:
-            await status_msg.edit('اتکر {} بیو اش به **{}** تغییر یافت.'.format(phone, provided_bio))
+            await status_msg.edit(
+                'اتکر {} بیو اش به **{}** تغییر یافت.'.format(phone, provided_bio)
+            )
         else:
-            await status_msg.edit('مشکلی در تغییر بیو اتکر {} به وجود آمد.'.format(phone))
+            await status_msg.edit(
+                'مشکلی در تغییر بیو اتکر {} به وجود آمد.'.format(phone)
+            )
 
 
 @Client.on_message(
-    filters.regex(r'^\/setprofile (\+\d+)$') &
-    filters.group &
-    ~filters.edited &
-    admin
+    filters.regex(r'^\/setprofile (\+\d+)$') & filters.group & ~filters.edited & admin
 )
 async def set_profile_photo(client: Client, message: Message):
-    """
-    Start profile photo for a specific attacker.
-    """
+    """Start profile photo for a specific attacker."""
     phone = message.matches[0].group(1)
 
     provided_photo = message.reply_to_message.photo
@@ -450,7 +485,9 @@ async def set_profile_photo(client: Client, message: Message):
         file_name='media/profile_photo.jpg',
     )
 
-    status_msg = await message.reply_text('درحال تغییر عکس پروفایل اتکر {}. لطفا صبر کنید...'.format(phone))
+    status_msg = await message.reply_text(
+        'درحال تغییر عکس پروفایل اتکر {}. لطفا صبر کنید...'.format(phone)
+    )
 
     try:
         success = await _update_attacker(phone, 'profile_photo', provided_photo)
@@ -458,26 +495,28 @@ async def set_profile_photo(client: Client, message: Message):
         await status_msg.edit(e.message)
     except exceptions.AuthKeyUnregistered:
         await status_msg.edit(
-            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(
+                phone
+            )
+        )
     else:
         if success:
-            await status_msg.edit('اتکر {} عکس پروفایلش اش تغییر یافت.'.format(phone, provided_photo))
+            await status_msg.edit(
+                'اتکر {} عکس پروفایلش اش تغییر یافت.'.format(phone, provided_photo)
+            )
         else:
-            await status_msg.edit('مشکلی در تغییر عکس پروفایل اتکر {} به وجود آمد.'.format(phone))
+            await status_msg.edit(
+                'مشکلی در تغییر عکس پروفایل اتکر {} به وجود آمد.'.format(phone)
+            )
     finally:
         os.remove('media/profile_photo.jpg')
 
 
 @Client.on_message(
-    filters.regex(r'^\/setusername (\+\d+)$') &
-    filters.group &
-    ~filters.edited &
-    admin
+    filters.regex(r'^\/setusername (\+\d+)$') & filters.group & ~filters.edited & admin
 )
 async def set_username(client: Client, message: Message):
-    """
-    Start username for a specific attacker.
-    """
+    """Start username for a specific attacker."""
     phone = message.matches[0].group(1)
 
     provided_username = message.reply_to_message.text
@@ -485,7 +524,9 @@ async def set_username(client: Client, message: Message):
         await message.reply_text('لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.')
         return
 
-    status_msg = await message.reply_text('درحال تغییر نام کاربری اتکر {}. لطفا صبر کنید...'.format(phone))
+    status_msg = await message.reply_text(
+        'درحال تغییر نام کاربری اتکر {}. لطفا صبر کنید...'.format(phone)
+    )
 
     try:
         success = await _update_attacker(phone, 'username', provided_username)
@@ -493,10 +534,17 @@ async def set_username(client: Client, message: Message):
         await status_msg.edit(e.message)
     except exceptions.AuthKeyUnregistered:
         await status_msg.edit(
-            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(
+                phone
+            )
+        )
     else:
         if success:
-            await status_msg.edit('اتکر {} نام کاربری اش به **{}** تغییر یافت.'.format(phone, provided_username))
+            await status_msg.edit(
+                'اتکر {} نام کاربری اش به **{}** تغییر یافت.'.format(
+                    phone, provided_username
+                )
+            )
         else:
             await status_msg.edit(
                 'مشکلی در تغییر نام کاربری اتکر {} به وجود آمد.\n'
@@ -506,15 +554,13 @@ async def set_username(client: Client, message: Message):
 
 
 @Client.on_message(
-    filters.regex(r'^\/members (\+\d+) @?(.*) (\d+)$') &
-    filters.group &
-    ~filters.edited &
-    admin
+    filters.regex(r'^\/members (\+\d+) @?(.*) (\d+)$')
+    & filters.group
+    & ~filters.edited
+    & admin
 )
 async def get_group_members(client: Client, message: Message):
-    """
-    Get list of group members.
-    """
+    """Get list of group members."""
     phone = message.matches[0].group(1)
     group_id = message.matches[0].group(2)
     # if the link was not for a private group
@@ -525,7 +571,9 @@ async def get_group_members(client: Client, message: Message):
         private_target = True
     limit = int(message.matches[0].group(3))
 
-    status_msg = await message.reply_text('درحال گرفتن لیست ممبر های گروه. لطفا صبر کنید...')
+    status_msg = await message.reply_text(
+        'درحال گرفتن لیست ممبر های گروه. لطفا صبر کنید...'
+    )
 
     # if the user entered the group chat id, convert it to int
     if group_id.lstrip('-').isdigit():
@@ -574,22 +622,33 @@ async def get_group_members(client: Client, message: Message):
         await status_msg.edit(e.message)
     except exceptions.AuthKeyUnregistered:
         await status_msg.edit(
-            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(
+                phone
+            )
+        )
     except Exception as e:
         exception_class = e.__class__.__name__
         await status_msg.edit(
-            'خطای غیر منتظره ای هنگام انجام عملیات رخ داده است.\n {}  - {}'.format(exception_class, e))
+            'خطای غیر منتظره ای هنگام انجام عملیات رخ داده است.\n {}  - {}'.format(
+                exception_class, e
+            )
+        )
     else:
         # if any members still left
         if text:
             await message.reply_text(text)
 
-        await message.reply_text('فرایند گرفتن ممبرهای گروه {} تمام شد.'.format(group_id))
+        await message.reply_text(
+            'فرایند گرفتن ممبرهای گروه {} تمام شد.'.format(group_id)
+        )
 
 
 async def start_attack(
-    attacker: Attacker, message: Message,
-    targets: list, method: str, banner: dict,
+    attacker: Attacker,
+    message: Message,
+    targets: list,
+    method: str,
+    banner: dict,
 ) -> Tuple[int, bool]:
     """
     Start attacking on given targets.
@@ -613,7 +672,9 @@ async def start_attack(
             )
             await asyncio.sleep(e.x)
             targets = targets[index:]
-            _succeed_attacks, _ = await start_attack(attacker, message, targets, method, banner)
+            _succeed_attacks, _ = await start_attack(
+                attacker, message, targets, method, banner
+            )
             succeed_attacks += _succeed_attacks
             break
         except exceptions.PeerFlood:
@@ -623,16 +684,14 @@ async def start_attack(
 
 
 @Client.on_message(
-    filters.regex(r'^\/attack (\+\d+)$') &
-    filters.group &
-    ~filters.edited &
-    filters.reply &
-    admin
+    filters.regex(r'^\/attack (\+\d+)$')
+    & filters.group
+    & ~filters.edited
+    & filters.reply
+    & admin
 )
 async def attack(client: Client, message: Message):
-    """
-    Attack to a list of users or groups.
-    """
+    """Attack to a list of users or groups."""
     phone = message.matches[0].group(1)
 
     # it is not possible to attack multiple places simultaneously
@@ -652,25 +711,39 @@ async def attack(client: Client, message: Message):
     if not targets:
         return
 
-    status_msg = await message.reply_text('درحال اتک به لیست با شماره {}. لطفا صبر کنید...'.format(phone))
+    status_msg = await message.reply_text(
+        'درحال اتک به لیست با شماره {}. لطفا صبر کنید...'.format(phone)
+    )
     method = get_send_method_by_media_type(banner['media_type'])
     try:
         async with await Attacker.init(phone) as attacker:
             await storage.redis.sadd('attacking_attackers', phone)
-            succeed_attacks, is_flooded = await start_attack(attacker, status_msg, targets, method, banner)
+            succeed_attacks, is_flooded = await start_attack(
+                attacker, status_msg, targets, method, banner
+            )
     except AttackerNotFound as e:
         await status_msg.edit(e.message)
     except exceptions.AuthKeyUnregistered:
         await status_msg.edit(
-            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(phone))
+            'سشن اتکر {} در ربات منسوخ شده است. لطفا اتکر را یک بار از ربات پاک و سپس اضافه کنید.'.format(
+                phone
+            )
+        )
     except Exception as e:
         exception_class = e.__class__.__name__
         await status_msg.edit(
-            'خطای غیر منتظره ای هنگام انجام عملیات رخ داده است.\n {}  - {}'.format(exception_class, e))
+            'خطای غیر منتظره ای هنگام انجام عملیات رخ داده است.\n {}  - {}'.format(
+                exception_class, e
+            )
+        )
     else:
         if is_flooded:
             if succeed_attacks > 0:
-                text = 'اتکر در حین اتک به محدودیت خورد. تعداد اتک های موفق: {}.'.format(succeed_attacks)
+                text = (
+                    'اتکر در حین اتک به محدودیت خورد. تعداد اتک های موفق: {}.'.format(
+                        succeed_attacks
+                    )
+                )
             else:
                 text = 'اتکر به محدودیت خورده است.'
         else:

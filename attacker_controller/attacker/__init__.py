@@ -5,7 +5,7 @@ from attacker_controller.utils import storage
 
 
 class Attacker(Client):
-    """ Attacker Client. """
+    """Attacker Client."""
 
     def __init__(self, phone, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -46,8 +46,8 @@ class Attacker(Client):
         try:
             target_chat = await self.get_chat(target)
         except (
-                UsernameNotOccupied,
-                PeerIdInvalid,
+            UsernameNotOccupied,
+            PeerIdInvalid,
         ):
             return False
         else:
@@ -57,7 +57,9 @@ class Attacker(Client):
         send_method = getattr(self, method)
 
         if banner['media_type']:
-            await send_method(target, f'media/banner/banner.{banner["media_ext"]}', banner['text'])
+            await send_method(
+                target, f'media/banner/banner.{banner["media_ext"]}', banner['text']
+            )
         else:
             await send_method(target, banner['text'])
         return True

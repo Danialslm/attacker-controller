@@ -8,8 +8,10 @@ from pyrogram.types import Message
 from attacker_controller import MAIN_ADMINS
 from attacker_controller.attacker import Attacker
 from attacker_controller.utils import (
-    remove_attacker_session, get_message_file_extension,
-    get_send_method_by_media_type, storage,
+    remove_attacker_session,
+    get_message_file_extension,
+    get_send_method_by_media_type,
+    storage,
 )
 from attacker_controller.utils.custom_filters import admin
 
@@ -18,44 +20,44 @@ app = Client(
     api_id=config('api_id', cast=int),
     api_hash=config('api_hash'),
     bot_token=config('bot_token'),
-    plugins={'root': 'attacker_controller.attacker'}
+    plugins={'root': 'attacker_controller.attacker'},
 )
 
 
 @app.on_message(
-    filters.regex(r'^\/addadmin (\d+(?:\s+\d+)*)$') &
-    filters.group &
-    ~filters.edited &
-    filters.user(MAIN_ADMINS)
+    filters.regex(r'^\/addadmin (\d+(?:\s+\d+)*)$')
+    & filters.group
+    & ~filters.edited
+    & filters.user(MAIN_ADMINS)
 )
 async def add_admin(client: Client, message: Message):
-    """ Add the given chat ids to the admin list. """
+    """Add the given chat ids to the admin list."""
     users_chat_id = message.matches[0].group(1).split()
     await storage.add_admin(*users_chat_id)
     await message.reply_text('چت ایدی های داده شده به لیست ادمین‌ها اضافه شد.')
 
 
 @app.on_message(
-    filters.regex(r'^\/removeadmin (\d+(?:\s+\d+)*)$') &
-    filters.group &
-    ~filters.edited &
-    filters.user(MAIN_ADMINS)
+    filters.regex(r'^\/removeadmin (\d+(?:\s+\d+)*)$')
+    & filters.group
+    & ~filters.edited
+    & filters.user(MAIN_ADMINS)
 )
 async def remove_admin(client: Client, message: Message):
-    """ Remove the given chat ids from the admin list.  """
+    """Remove the given chat ids from the admin list."""
     users_chat_id = message.matches[0].group(1).split()
     await storage.remove_admin(*users_chat_id)
     await message.reply_text('چت ایدی های داده شده از لیست ادمین‌ها حذف شد.')
 
 
 @app.on_message(
-    filters.command('adminlist') &
-    filters.group &
-    ~filters.edited &
-    filters.user(MAIN_ADMINS)
+    filters.command('adminlist')
+    & filters.group
+    & ~filters.edited
+    & filters.user(MAIN_ADMINS)
 )
 async def admin_list(client: Client, message: Message):
-    """ Send current admins list."""
+    """Send current admins list."""
     text = 'لیست چت ایدی ادمین‌های فعلی ربات:\n\n'
     admin_counter = 0
     for chat_id in await storage.get_admins():
@@ -68,7 +70,7 @@ async def admin_list(client: Client, message: Message):
 async def check_peer_flood(attacker_phone: str):
     """
     Check the attacker has any limitation with @spambot.
-    
+
     Return True if the given attacker is limited and False if it isn't.
     """
     async with await Attacker.init(attacker_phone) as attacker:
@@ -85,10 +87,7 @@ async def check_peer_flood(attacker_phone: str):
 
 
 @app.on_message(
-    filters.command('attackerlist') &
-    filters.group &
-    ~filters.edited &
-    admin
+    filters.command('attackerlist') & filters.group & ~filters.edited & admin
 )
 async def attacker_list(client: Client, message: Message):
     """
@@ -97,27 +96,27 @@ async def attacker_list(client: Client, message: Message):
     """
     text = 'لیست اتکرها : \n\n'
     attackers = await storage.get_attackers()
-    tasks = [
-        asyncio.create_task(check_peer_flood(attacker))
-        for attacker in attackers
-    ]
+    tasks = [asyncio.create_task(check_peer_flood(attacker)) for attacker in attackers]
     peer_flood_result = await asyncio.gather(*tasks)
 
     attacker_counter = 0
     for attacker, flooded in zip(attackers, peer_flood_result):
         attacker_counter += 1
-        text += f'{attacker_counter} - `{attacker}`' + (' (limited)\n' if flooded else '\n')
+        text += f'{attacker_counter} - `{attacker}`' + (
+            ' (limited)\n' if flooded else '\n'
+        )
 
     await message.reply(text)
 
+
 @app.on_message(
-    filters.regex(r'^\/removeattacker (\+\d+(?:\s+\+\d+)*)$') &
-    filters.group &
-    ~filters.edited &
-    admin
+    filters.regex(r'^\/removeattacker (\+\d+(?:\s+\+\d+)*)$')
+    & filters.group
+    & ~filters.edited
+    & admin
 )
 async def remove_attacker(client: Client, message: Message):
-    """ Remove given phone(s) from attacker list. """
+    """Remove given phone(s) from attacker list."""
     phones = message.matches[0].group(1).split()
     for phone in phones:
         try:
@@ -131,13 +130,13 @@ async def remove_attacker(client: Client, message: Message):
 
 
 @app.on_message(
-    filters.command('cleanattackers') &
-    filters.group &
-    ~filters.edited &
-    filters.user(MAIN_ADMINS)
+    filters.command('cleanattackers')
+    & filters.group
+    & ~filters.edited
+    & filters.user(MAIN_ADMINS)
 )
 async def clean_attacker_list(client: Client, message: Message):
-    """ Remove all attackers. """
+    """Remove all attackers."""
     for phone in await storage.get_attackers():
         try:
             async with await Attacker.init(phone) as attacker:
@@ -151,11 +150,11 @@ async def clean_attacker_list(client: Client, message: Message):
 
 
 @app.on_message(
-    filters.command('setbanner') &
-    filters.group &
-    ~filters.edited &
-    filters.reply &
-    admin
+    filters.command('setbanner')
+    & filters.group
+    & ~filters.edited
+    & filters.reply
+    & admin
 )
 async def set_banner(client: Client, message: Message):
     """
@@ -169,35 +168,39 @@ async def set_banner(client: Client, message: Message):
     banner = message.reply_to_message
     # get and save media if message has
     media = (
-            banner.photo or banner.video or
-            banner.animation or banner.voice or
-            banner.sticker
+        banner.photo
+        or banner.video
+        or banner.animation
+        or banner.voice
+        or banner.sticker
     )
     banner_media_ext = ''
     if media:
         # media file extension
         banner_media_ext = get_message_file_extension(banner)
 
-        await message.reply_to_message.download(file_name=f'media/banner/banner.{banner_media_ext}')
+        await message.reply_to_message.download(
+            file_name=f'media/banner/banner.{banner_media_ext}'
+        )
 
     banner_media_type = banner.media or ''
-    banner_text = message.reply_to_message.caption or message.reply_to_message.text or ''
+    banner_text = (
+        message.reply_to_message.caption or message.reply_to_message.text or ''
+    )
 
     # store the banner in cache
-    await storage.redis.hset('banner', mapping={
-        'text': banner_text,
-        'media_ext': banner_media_ext,
-        'media_type': banner_media_type
-    })
+    await storage.redis.hset(
+        'banner',
+        mapping={
+            'text': banner_text,
+            'media_ext': banner_media_ext,
+            'media_type': banner_media_type,
+        },
+    )
     await message.reply_text('بنر با موفقیت ذخیره شد.')
 
 
-@app.on_message(
-    filters.command('banner') &
-    filters.group &
-    ~filters.edited &
-    admin
-)
+@app.on_message(filters.command('banner') & filters.group & ~filters.edited & admin)
 async def get_current_banner(client: Client, message: Message):
     """
     Show the current banner.
@@ -212,20 +215,18 @@ async def get_current_banner(client: Client, message: Message):
 
     send_method = getattr(client, method)
     if banner['media_type']:
-        await send_method(message.chat.id, f'media/banner/banner.{banner["media_ext"]}', banner['text'])
+        await send_method(
+            message.chat.id,
+            f'media/banner/banner.{banner["media_ext"]}',
+            banner['text'],
+        )
     else:
         await send_method(message.chat.id, banner['text'])
 
 
-@app.on_message(
-    filters.command('help') &
-    filters.group &
-    ~filters.edited
-)
+@app.on_message(filters.command('help') & filters.group & ~filters.edited)
 async def help_commands(client: Client, message: Message):
-    """
-    Return the list of available bot commands.
-    """
+    """Return the list of available bot commands."""
     text = """
 `/adminlist` - لیست ادمین های معمولی
 `/addadmin` - اضافه کردن ادمین جدید (جلوش یک چت ایدی یا چند چت ایدی باید باشه)

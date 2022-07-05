@@ -25,23 +25,23 @@ async def _create_application(
     URL: 'https://my.telegram.org/apps/create'
     """
     url = 'https://my.telegram.org/apps/create'
-    headers = {
-        'Cookie': 'stel_token=' + stel_token
-    }
+    headers = {'Cookie': 'stel_token=' + stel_token}
     data = {
         'hash': app_hash,
         'app_title': app_title,
         'app_shortname': app_shortname,
         'app_url': app_url,
         'app_platform': app_platform,
-        'app_desc': app_desc
+        'app_desc': app_desc,
     }
 
     async with session.post(url, data=data, headers=headers) as res:
         pass
 
 
-async def _get_api_id_and_api_hash(session: ClientSession, stel_token: str) -> Tuple[str, str]:
+async def _get_api_id_and_api_hash(
+    session: ClientSession, stel_token: str
+) -> Tuple[str, str]:
     """
     Get `api_id` and `api_hash` by scraping on https://my.telegram.org/apps.
 
@@ -80,9 +80,7 @@ async def send_password(phone: str) -> Tuple[bool, str]:
     URL: https://my.telegram.org/auth/send_password
     """
     url = 'https://my.telegram.org/auth/send_password'
-    data = {
-        'phone': phone
-    }
+    data = {'phone': phone}
     async with ClientSession(timeout=timeout) as session:
         try:
             async with session.post(url, data=data) as res:
@@ -103,7 +101,10 @@ async def send_password(phone: str) -> Tuple[bool, str]:
                 message = f'{res_text.decode()}خروجی غیرمنتظره! ریسپانس تلگرام : '
                 return False, message
         except TimeoutError:
-            return False, f'جوابی از سوی تلگرام بعد از {timeout.total} ثانیه دریافت نشد.'
+            return (
+                False,
+                f'جوابی از سوی تلگرام بعد از {timeout.total} ثانیه دریافت نشد.',
+            )
 
 
 async def login(phone: str, password: str) -> Tuple[bool, str]:
@@ -140,7 +141,9 @@ async def login(phone: str, password: str) -> Tuple[bool, str]:
                         # get telegram cookie after login
                         stel_token = res.cookies.get('stel_token').value
 
-                        api_id, api_hash = await _get_api_id_and_api_hash(session, stel_token)
+                        api_id, api_hash = await _get_api_id_and_api_hash(
+                            session, stel_token
+                        )
                         await add_new_attacker(phone, api_id, api_hash)
                         return True, 'شماره ارسال شده به لیست اتکرها اضافه شد.'
 
@@ -148,4 +151,7 @@ async def login(phone: str, password: str) -> Tuple[bool, str]:
                 message = f'{res_text.decode()}خروجی غیرمنتظره! ریسپانس تلگرام :\n '
                 return False, message
         except TimeoutError:
-            return False, f'جوابی از سوی تلگرام بعد از {timeout.total} ثانیه دریافت نشد.'
+            return (
+                False,
+                f'جوابی از سوی تلگرام بعد از {timeout.total} ثانیه دریافت نشد.',
+            )

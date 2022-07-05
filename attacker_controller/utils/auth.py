@@ -155,8 +155,7 @@ async def login(phone: str, password: str) -> Tuple[bool, str]:
                         return True, None
 
                 res_text = await res.read()
-                message = f'{res_text.decode()}خروجی غیرمنتظره! ریسپانس تلگرام :\n '
-                return False, message
+                return False, f'{res_text.decode()}خروجی غیرمنتظره! ریسپانس تلگرام :\n '
         except TimeoutError:
             return (
                 False,

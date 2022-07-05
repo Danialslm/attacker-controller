@@ -596,7 +596,7 @@ async def get_group_members(client: Client, message: Message):
     text = ''
     try:
         async with await Attacker.init(phone) as attacker:
-            # join or get the private chat to access its chat id
+            # for private chats, join if attacker wasn't already joined and get its chat id
             if private_target:
                 try:
                     target_chat = await attacker.join_chat(group_id)

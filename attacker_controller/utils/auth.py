@@ -5,6 +5,7 @@ from aiohttp import ClientSession, ClientTimeout
 from bs4 import BeautifulSoup
 
 from attacker_controller.utils.storage import redis, add_new_attacker
+from attacker_controller import logger
 
 timeout = ClientTimeout(total=10)
 
@@ -36,7 +37,14 @@ async def _create_application(
     }
 
     async with session.post(url, data=data, headers=headers) as res:
-        pass
+        if not res.ok:
+            logger.error(
+                'Error with getting api id and api hash. '
+                f'request response status code: {res.status}. '
+                f'response reason: {res.reason}.'
+                )
+            return False
+        return True
 
 
 async def _get_api_id_and_api_hash(
@@ -60,8 +68,8 @@ async def _get_api_id_and_api_hash(
         if page_title == 'Create new application':
             # if there is no application, create and try again
             app_hash = soup.find("input", {"name": "hash"}).get("value")
-            await _create_application(session, stel_token, app_hash)
-            api_id, api_hash = await _get_api_id_and_api_hash(session, stel_token)
+            if await _create_application(session, stel_token, app_hash):
+                api_id, api_hash = await _get_api_id_and_api_hash(session, stel_token)
         else:
             inputs = soup.find_all("span", {"class": "input-xlarge"})
             api_id = inputs[0].string

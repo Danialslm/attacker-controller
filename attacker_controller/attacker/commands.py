@@ -94,9 +94,7 @@ async def _update_attacker(
     return succeed
 
 
-@Client.on_message(
-    filters.regex(r'^\/sendcode (\+\d+)$') & filters.group & ~filters.edited & admin
-)
+@Client.on_message(filters.regex(r'^\/sendcode (\+\d+)$') & ~filters.edited & admin)
 async def send_code(client: Client, message: Message):
     """Send Login code to given phone number."""
     global LOGGING_ATTACKER
@@ -147,9 +145,7 @@ async def send_code(client: Client, message: Message):
             remove_attacker_session(phone)
 
 
-@Client.on_message(
-    filters.regex(r'^\/login (\+\d+) (.+)$') & filters.group & ~filters.edited & admin
-)
+@Client.on_message(filters.regex(r'^\/login (\+\d+) (.+)$') & ~filters.edited & admin)
 async def login_attacker(client: Client, message: Message):
     """Login to account by provided credentials."""
     global LOGGING_ATTACKER
@@ -204,11 +200,7 @@ async def login_attacker(client: Client, message: Message):
 
 
 @Client.on_message(
-    filters.command('setfirstnameall')
-    & filters.group
-    & ~filters.edited
-    & filters.reply
-    & admin
+    filters.command('setfirstnameall') & ~filters.edited & filters.reply & admin
 )
 async def set_first_name_all(client: Client, message: Message):
     """Set a first name for all attackers."""
@@ -234,11 +226,7 @@ async def set_first_name_all(client: Client, message: Message):
 
 
 @Client.on_message(
-    filters.command('setlastnameall')
-    & filters.group
-    & ~filters.edited
-    & filters.reply
-    & admin
+    filters.command('setlastnameall') & ~filters.edited & filters.reply & admin
 )
 async def set_last_name_all(client: Client, message: Message):
     """Set a last name for all attackers."""
@@ -264,11 +252,7 @@ async def set_last_name_all(client: Client, message: Message):
 
 
 @Client.on_message(
-    filters.command('setbioall')
-    & filters.group
-    & ~filters.edited
-    & filters.reply
-    & admin
+    filters.command('setbioall') & ~filters.edited & filters.reply & admin
 )
 async def set_bio_all(client: Client, message: Message):
     """Set a bio for all attackers."""
@@ -294,11 +278,7 @@ async def set_bio_all(client: Client, message: Message):
 
 
 @Client.on_message(
-    filters.command('setprofileall')
-    & filters.group
-    & ~filters.edited
-    & filters.reply
-    & admin
+    filters.command('setprofileall') & ~filters.edited & filters.reply & admin
 )
 async def set_profile_photo_all(client: Client, message: Message):
     """Set a profile photo for all attackers."""
@@ -328,9 +308,7 @@ async def set_profile_photo_all(client: Client, message: Message):
     await status_msg.edit(text, parse_mode='markdown')
 
 
-@Client.on_message(
-    filters.regex(r'^\/setfirstname (\+\d+)$') & filters.group & ~filters.edited & admin
-)
+@Client.on_message(filters.regex(r'^\/setfirstname (\+\d+)$') & ~filters.edited & admin)
 async def set_first_name(client: Client, message: Message):
     """Start first name for a specific attacker."""
     phone = message.matches[0].group(1)
@@ -355,9 +333,7 @@ async def set_first_name(client: Client, message: Message):
             await status_msg.edit(messages.PROBLEM_WITH_UPDATING_FIRST_NAME.format(phone))
 
 
-@Client.on_message(
-    filters.regex(r'^\/setlastname (\+\d+)$') & filters.group & ~filters.edited & admin
-)
+@Client.on_message(filters.regex(r'^\/setlastname (\+\d+)$') & ~filters.edited & admin)
 async def set_last_name(client: Client, message: Message):
     """Start last name for a specific attacker."""
     phone = message.matches[0].group(1)
@@ -382,9 +358,7 @@ async def set_last_name(client: Client, message: Message):
             await status_msg.edit(messages.PROBLEM_WITH_UPDATING_LAST_NAME.format(phone))
 
 
-@Client.on_message(
-    filters.regex(r'^\/setbio (\+\d+)$') & filters.group & ~filters.edited & admin
-)
+@Client.on_message(filters.regex(r'^\/setbio (\+\d+)$') & ~filters.edited & admin)
 async def set_bio(client: Client, message: Message):
     """Start bio for a specific attacker."""
     phone = message.matches[0].group(1)
@@ -409,9 +383,7 @@ async def set_bio(client: Client, message: Message):
             await status_msg.edit(messages.PROBLEM_WITH_UPDATING_BIOGRAPHY.format(phone))
 
 
-@Client.on_message(
-    filters.regex(r'^\/setprofile (\+\d+)$') & filters.group & ~filters.edited & admin
-)
+@Client.on_message(filters.regex(r'^\/setprofile (\+\d+)$') & ~filters.edited & admin)
 async def set_profile_photo(client: Client, message: Message):
     """Start profile photo for a specific attacker."""
     phone = message.matches[0].group(1)
@@ -444,9 +416,7 @@ async def set_profile_photo(client: Client, message: Message):
         os.remove('media/profile_photo.jpg')
 
 
-@Client.on_message(
-    filters.regex(r'^\/setusername (\+\d+)$') & filters.group & ~filters.edited & admin
-)
+@Client.on_message(filters.regex(r'^\/setusername (\+\d+)$') & ~filters.edited & admin)
 async def set_username(client: Client, message: Message):
     """Start username for a specific attacker."""
     phone = message.matches[0].group(1)
@@ -472,10 +442,7 @@ async def set_username(client: Client, message: Message):
 
 
 @Client.on_message(
-    filters.regex(r'^\/members (\+\d+) @?(.*) (\d+)$')
-    & filters.group
-    & ~filters.edited
-    & admin
+    filters.regex(r'^\/members (\+\d+) @?(.*) (\d+)$') & ~filters.edited & admin
 )
 async def get_group_members(client: Client, message: Message):
     """Get list of group members."""
@@ -525,7 +492,7 @@ async def get_group_members(client: Client, message: Message):
                     continue
 
                 member_counter += 1
-                text += f'{member_counter} - {member.user.username if member.user.username else member.user.id}\n'
+                text += f'{member_counter} - {"@" + member.user.username if member.user.username else member.user.id}\n'
 
                 # send members in lists of 50
                 if member_counter % 50 == 0:
@@ -583,11 +550,7 @@ async def start_attack(
 
 
 @Client.on_message(
-    filters.regex(r'^\/attack (\+\d+)$')
-    & filters.group
-    & ~filters.edited
-    & filters.reply
-    & admin
+    filters.regex(r'^\/attack (\+\d+)$') & ~filters.edited & filters.reply & admin
 )
 async def attack(client: Client, message: Message):
     """Attack to a list of users or groups."""

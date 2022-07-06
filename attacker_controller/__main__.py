@@ -27,7 +27,6 @@ app = Client(
 
 @app.on_message(
     filters.regex(r'^\/addadmin (\d+(?:\s+\d+)*)$')
-    & filters.group
     & ~filters.edited
     & filters.user(MAIN_ADMINS)
 )
@@ -40,7 +39,6 @@ async def add_admin(client: Client, message: Message):
 
 @app.on_message(
     filters.regex(r'^\/removeadmin (\d+(?:\s+\d+)*)$')
-    & filters.group
     & ~filters.edited
     & filters.user(MAIN_ADMINS)
 )
@@ -52,10 +50,7 @@ async def remove_admin(client: Client, message: Message):
 
 
 @app.on_message(
-    filters.command('adminlist')
-    & filters.group
-    & ~filters.edited
-    & filters.user(MAIN_ADMINS)
+    filters.command('adminlist') & ~filters.edited & filters.user(MAIN_ADMINS)
 )
 async def admin_list(client: Client, message: Message):
     """Send current admins list."""
@@ -88,9 +83,7 @@ async def check_peer_flood(attacker_phone: str):
         return True
 
 
-@app.on_message(
-    filters.command('attackerlist') & filters.group & ~filters.edited & admin
-)
+@app.on_message(filters.command('attackerlist') & ~filters.edited & admin)
 async def attacker_list(client: Client, message: Message):
     """Send list of attackers phone. Also specify that attacker is flooded or not."""
     text = messages.ATTACKER_LIST
@@ -108,53 +101,42 @@ async def attacker_list(client: Client, message: Message):
     await message.reply(text)
 
 
+async def _remove_attacker(phone):
+    try:
+        async with await Attacker.init(phone) as attacker:
+            await attacker.log_out()
+    except:
+        pass
+    remove_attacker_session(phone)
+    await storage.remove_attacker(phone)
+
+
 @app.on_message(
-    filters.regex(r'^\/removeattacker (\+\d+(?:\s+\+\d+)*)$')
-    & filters.group
-    & ~filters.edited
-    & admin
+    filters.regex(r'^\/removeattacker (\+\d+(?:\s+\+\d+)*)$') & ~filters.edited & admin
 )
 async def remove_attacker(client: Client, message: Message):
     """Remove the given phone(s) from attacker list."""
     phones = message.matches[0].group(1).split()
-    for phone in phones:
-        try:
-            async with await Attacker.init(phone) as attacker:
-                await attacker.log_out()
-        except:
-            pass
-        remove_attacker_session(phone)
-        await storage.remove_attacker(phone)
-    await message.reply_text(messages.ATTACKER_REMOVED)
+    await asyncio.gather(*[
+        _remove_attacker(phone)
+        for phone in phones
+    ])
+    await message.reply_text('شماره(های) داده شده از لیست اتکر‌ها حذف شد.')
 
 
 @app.on_message(
-    filters.command('cleanattackers')
-    & filters.group
-    & ~filters.edited
-    & filters.user(MAIN_ADMINS)
+    filters.command('cleanattackers') & ~filters.edited & filters.user(MAIN_ADMINS)
 )
 async def clean_attacker_list(client: Client, message: Message):
     """Remove all attackers."""
-    for phone in await storage.get_attackers():
-        try:
-            async with await Attacker.init(phone) as attacker:
-                await attacker.log_out()
-        except:
-            pass
-        remove_attacker_session(phone)
-        await storage.remove_attacker(phone)
-
-    await message.reply_text(messages.ATTACKER_LIST_CLEANED)
+    await asyncio.gather(*[
+        _remove_attacker(phone)
+        for phone in await storage.get_attackers()
+    ])
+    await message.reply_text('تمام اتکرها از ربات پاک شدند.')
 
 
-@app.on_message(
-    filters.command('setbanner')
-    & filters.group
-    & ~filters.edited
-    & filters.reply
-    & admin
-)
+@app.on_message(filters.command('setbanner') & ~filters.edited & filters.reply & admin)
 async def set_banner(client: Client, message: Message):
     """Set a new banner."""
     # remove previous banner file
@@ -196,7 +178,7 @@ async def set_banner(client: Client, message: Message):
     await message.reply_text(messages.BANNER_SAVED)
 
 
-@app.on_message(filters.command('banner') & filters.group & ~filters.edited & admin)
+@app.on_message(filters.command('banner') & ~filters.edited & admin)
 async def get_current_banner(client: Client, message: Message):
     """Show the current banner."""
     banner = await storage.redis.hgetall('banner')
@@ -218,7 +200,7 @@ async def get_current_banner(client: Client, message: Message):
         await send_method(message.chat.id, banner['text'])
 
 
-@app.on_message(filters.command('help') & filters.group & ~filters.edited)
+@app.on_message(filters.command('help') & ~filters.edited)
 async def help_commands(client: Client, message: Message):
     """Return the list of available bot commands."""
     await message.reply_text(messages.HELP)

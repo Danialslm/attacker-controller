@@ -164,7 +164,7 @@ async def login_attacker(client: Client, message: Message):
 
     phone = message.matches[0].group(1)
     # user must requested login code for the phone
-    if LOGGING_ATTACKER is None or LOGGING_ATTACKER.phone != phone:
+    if LOGGING_ATTACKER is None or not LOGGING_ATTACKER.is_connected:
         await message.reply_text(
             'مطمئن باشید قبل از لاگین به اکانت درخواست ارسال کد برای این شماره را کرده اید.'
         )

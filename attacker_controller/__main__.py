@@ -31,7 +31,7 @@ app = Client(
     & filters.user(MAIN_ADMINS)
 )
 async def add_admin(client: Client, message: Message):
-    """Add the given chat ids to the admin list."""
+    """Add the given chat id(s) to the admin list."""
     users_chat_id = message.matches[0].group(1).split()
     await storage.add_admin(*users_chat_id)
     await message.reply_text('چت ایدی های داده شده به لیست ادمین‌ها اضافه شد.')
@@ -44,7 +44,7 @@ async def add_admin(client: Client, message: Message):
     & filters.user(MAIN_ADMINS)
 )
 async def remove_admin(client: Client, message: Message):
-    """Remove the given chat ids from the admin list."""
+    """Remove the given chat id(s) from the admin list."""
     users_chat_id = message.matches[0].group(1).split()
     await storage.remove_admin(*users_chat_id)
     await message.reply_text('چت ایدی های داده شده از لیست ادمین‌ها حذف شد.')
@@ -91,10 +91,7 @@ async def check_peer_flood(attacker_phone: str):
     filters.command('attackerlist') & filters.group & ~filters.edited & admin
 )
 async def attacker_list(client: Client, message: Message):
-    """
-    Send list of attackers phone.
-    Also specify that is attacker flooded.
-    """
+    """Send list of attackers phone. Also specify that attacker is flooded or not."""
     text = 'لیست اتکرها : \n\n'
     attackers = await storage.get_attackers()
     tasks = [asyncio.create_task(check_peer_flood(attacker)) for attacker in attackers]
@@ -117,7 +114,7 @@ async def attacker_list(client: Client, message: Message):
     & admin
 )
 async def remove_attacker(client: Client, message: Message):
-    """Remove given phone(s) from attacker list."""
+    """Remove the given phone(s) from attacker list."""
     phones = message.matches[0].group(1).split()
     for phone in phones:
         try:
@@ -158,16 +155,14 @@ async def clean_attacker_list(client: Client, message: Message):
     & admin
 )
 async def set_banner(client: Client, message: Message):
-    """
-    Set a new banner.
-    """
+    """Set a new banner."""
     # remove previous banner file
     for _, __, files in os.walk('media/banner'):
         for file in files:
             os.remove(f'media/banner/{file}')
 
     banner = message.reply_to_message
-    # get and save media if message has
+    # get and save message media if any
     media = (
         banner.photo
         or banner.video
@@ -177,9 +172,8 @@ async def set_banner(client: Client, message: Message):
     )
     banner_media_ext = ''
     if media:
-        # media file extension
+        # download the media
         banner_media_ext = get_message_file_extension(banner)
-
         await message.reply_to_message.download(
             file_name=f'media/banner/banner.{banner_media_ext}'
         )
@@ -203,9 +197,7 @@ async def set_banner(client: Client, message: Message):
 
 @app.on_message(filters.command('banner') & filters.group & ~filters.edited & admin)
 async def get_current_banner(client: Client, message: Message):
-    """
-    Show the current banner.
-    """
+    """Show the current banner."""
     banner = await storage.redis.hgetall('banner')
 
     if not banner:

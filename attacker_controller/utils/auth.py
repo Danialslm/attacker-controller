@@ -81,13 +81,10 @@ async def _get_api_id_and_api_hash(
 
 async def send_password(phone: str) -> Tuple[bool, str]:
     """
-    Send password to given phone number telegram account.
+    Send password to given phone number telegram account by requesting to https://my.telegram.org/auth/send_password.
 
-    returns:
-        boolean: shows that the request was successful or not.
-        str: return `random_hash` if request was successful or error text if it's not.
-
-    URL: https://my.telegram.org/auth/send_password
+    Return a tuple which contains boolean that shows the request sent successfully and a string
+    that may be `random_hash` if request was successful or response error text.
     """
     url = 'https://my.telegram.org/auth/send_password'
     data = {'phone': phone}
@@ -103,7 +100,7 @@ async def send_password(phone: str) -> Tuple[bool, str]:
                         res_data = await res.json()
                         random_hash = res_data.get('random_hash')
 
-                        # store phone as key and random hash as value which is expire in one minute
+                        # store random_hash for web login step
                         await redis.set(f'random_hash:{phone}', random_hash, 60)
                         return True, random_hash
 
@@ -119,12 +116,9 @@ async def send_password(phone: str) -> Tuple[bool, str]:
 
 async def login(phone: str, password: str) -> Tuple[bool, str]:
     """
-    Login account by provided credentials.
+    Login account with provided credentials by requesting to https://my.telegram.org/auth/login
 
-    returns:
-        tuple - contains a bool that shows the process was successful or not and error response.
-
-    URL: https://my.telegram.org/auth/login
+    Return a tuple which contains a boolean that shows the proccess was successful and response error text.
     """
     # get `random_hash` by phone number
     random_hash = await redis.get(f'random_hash:{phone}')

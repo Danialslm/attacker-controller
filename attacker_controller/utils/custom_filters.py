@@ -10,4 +10,4 @@ async def admin_filter(_, __, m: Message):
 
 
 admin = filters.create(admin_filter)
-""" Filter specified admins. """
+"""Filter specified admins."""

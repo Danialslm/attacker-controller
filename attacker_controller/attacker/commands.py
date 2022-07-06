@@ -23,7 +23,7 @@ LOGGING_ATTACKER: Union[Client, None] = None
 
 
 async def _web_login(phone: str) -> str:
-    """Login to the web application by given phone."""
+    """Login to the web application."""
     global LOGGING_ATTACKER
 
     def _error(err_reason):
@@ -32,7 +32,7 @@ async def _web_login(phone: str) -> str:
             'دلیل خطا:\n{}'.format(err_reason)
         )
 
-    # now its time to get account api id and api hash from https://my.telegram.org
+    # now its time to get account api id and api hash
     res = await auth.send_password(phone)
     if not res[0]:
         # sending password was failed
@@ -40,8 +40,6 @@ async def _web_login(phone: str) -> str:
 
     # get password from official telegram bot chat history
     last_message = await LOGGING_ATTACKER.get_history(777000, limit=1)
-    # the web password can get by regex or pythonic way
-    # web_password = re.match(r'.*This is your login code:\n(.*)\n', last_message[0].text).group(1)
     web_password = last_message[0].text.split('\n')[1]
     res = await auth.login(phone, web_password)
 
@@ -82,7 +80,7 @@ async def _update_attacker(
     """
     Connect to attacker and update it by given field and value.
 
-    Return True on success
+    Return True on success.
     """
     async with await Attacker.init(phone) as attacker:
         if field in ['first_name', 'last_name', 'bio']:

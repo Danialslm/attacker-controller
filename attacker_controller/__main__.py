@@ -14,6 +14,7 @@ from attacker_controller.utils import (
     storage,
 )
 from attacker_controller.utils.custom_filters import admin
+from attacker_controller import messages
 
 app = Client(
     'attacker_controller/sessions/attacker_controller',
@@ -34,7 +35,7 @@ async def add_admin(client: Client, message: Message):
     """Add the given chat id(s) to the admin list."""
     users_chat_id = message.matches[0].group(1).split()
     await storage.add_admin(*users_chat_id)
-    await message.reply_text('چت ایدی های داده شده به لیست ادمین‌ها اضافه شد.')
+    await message.reply_text(messages.ADMIN_ADDED)
 
 
 @app.on_message(
@@ -47,7 +48,7 @@ async def remove_admin(client: Client, message: Message):
     """Remove the given chat id(s) from the admin list."""
     users_chat_id = message.matches[0].group(1).split()
     await storage.remove_admin(*users_chat_id)
-    await message.reply_text('چت ایدی های داده شده از لیست ادمین‌ها حذف شد.')
+    await message.reply_text(messages.ADMIN_REMOVED)
 
 
 @app.on_message(
@@ -58,8 +59,8 @@ async def remove_admin(client: Client, message: Message):
 )
 async def admin_list(client: Client, message: Message):
     """Send current admins list."""
-    text = 'لیست چت ایدی ادمین‌های فعلی ربات:\n\n'
     admin_counter = 0
+    text = messages.ADMIN_LIST
     for chat_id in await storage.get_admins():
         admin_counter += 1
         text += f'{admin_counter} - `{chat_id}`\n'
@@ -92,7 +93,7 @@ async def check_peer_flood(attacker_phone: str):
 )
 async def attacker_list(client: Client, message: Message):
     """Send list of attackers phone. Also specify that attacker is flooded or not."""
-    text = 'لیست اتکرها : \n\n'
+    text = messages.ATTACKER_LIST
     attackers = await storage.get_attackers()
     tasks = [asyncio.create_task(check_peer_flood(attacker)) for attacker in attackers]
     peer_flood_result = await asyncio.gather(*tasks)
@@ -124,7 +125,7 @@ async def remove_attacker(client: Client, message: Message):
             pass
         remove_attacker_session(phone)
         await storage.remove_attacker(phone)
-    await message.reply_text('شماره(های) داده شده از لیست اتکر‌ها حذف شد.')
+    await message.reply_text(messages.ATTACKER_REMOVED)
 
 
 @app.on_message(
@@ -144,7 +145,7 @@ async def clean_attacker_list(client: Client, message: Message):
         remove_attacker_session(phone)
         await storage.remove_attacker(phone)
 
-    await message.reply_text('تمام اتکرها از ربات پاک شدند.')
+    await message.reply_text(messages.ATTACKER_LIST_CLEANED)
 
 
 @app.on_message(
@@ -192,7 +193,7 @@ async def set_banner(client: Client, message: Message):
             'media_type': banner_media_type,
         },
     )
-    await message.reply_text('بنر با موفقیت ذخیره شد.')
+    await message.reply_text(messages.BANNER_SAVED)
 
 
 @app.on_message(filters.command('banner') & filters.group & ~filters.edited & admin)
@@ -201,7 +202,7 @@ async def get_current_banner(client: Client, message: Message):
     banner = await storage.redis.hgetall('banner')
 
     if not banner:
-        await message.reply_text('بنری ست نشده است.')
+        await message.reply_text(messages.NO_BANNER_SET)
         return
 
     method = get_send_method_by_media_type(banner['media_type'])
@@ -220,36 +221,7 @@ async def get_current_banner(client: Client, message: Message):
 @app.on_message(filters.command('help') & filters.group & ~filters.edited)
 async def help_commands(client: Client, message: Message):
     """Return the list of available bot commands."""
-    text = """
-`/adminlist` - لیست ادمین های معمولی
-`/addadmin` - اضافه کردن ادمین جدید (جلوش یک چت ایدی یا چند چت ایدی باید باشه)
-`/removeadmin` - حذف کردن ادمین جدید (جلوش یک چت ایدی یا چند چت ایدی باید باشه)
-
-`/sendcode` - ارسال کد لاگین (جلوش شماره باید باشه)
-`/login` - لاگین به اکانت (جلوش شماره و کد و پسورد اگه داشت باید باشه)
-
-`/attackerlist` - لیست اتکر‌ها
-`/removeattacker` - حذف کردن اتکر (جلوش یک یا چند شماره باید باشه)
-`/cleanattackers` - حذف کردن تمام اتکرها
-
-`/setfirstnameall` - ست کردن نام کوچک برای همه اتکرها
-`/setlastnameall` - ست کردن نام خانوادگی برای همه اتکرها
-`/setbioall` - ست کردن بیو برای همه اتکرها
-`/setprofileall` - ست کردن عکس پروفایل برای همه اتکرها
-
-`/setfirstname` - ست کردن نام کوچک برای یک اتکر (جلوش شماره باید باشه)
-`/setlastname` - ست کردن نام خانوادگی برای یک اتکر (جلوش شماره باید باشه)
-`/setbio` - ست کردن بیو برای یک اتکر (جلوش شماره باید باشه)
-`/setprofile` - ست کردن عکس پروفایل برای یک اتکر (جلوش شماره باید باشه)
-`/setusername` - ست کردن نام کاربری برای یک اتکر (جلوش شماره باید باشه)
-
-`/members` - گرفتن ممبرا (جلوش شماره و ایدی گپ و تعداد ممبرای دریافتی باید باشه)
-`/attack` - اتک (جلوش شماره باید باشه)
-
-`/setbanner` - ست کردن بنر جدید
-`/banner` - بنر فعلی
-"""
-    await message.reply_text(text)
+    await message.reply_text(messages.HELP)
 
 
 app.run()

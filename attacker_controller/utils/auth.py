@@ -39,7 +39,7 @@ async def _create_application(
     async with session.post(url, data=data, headers=headers) as res:
         if not res.ok:
             logger.error(
-                'Error with getting api id and api hash. '
+                'Error in creating web application. '
                 f'request response status code: {res.status}. '
                 f'response reason: {res.reason}.'
                 )
@@ -75,7 +75,12 @@ async def _get_api_id_and_api_hash(
             api_id = inputs[0].string
             api_hash = inputs[1].string
         else:
-            res.raise_for_status()
+            if not res.ok:
+                logger.error(
+                    'Error in getting api id and api hash. '
+                    f'request response status code: {res.status}. '
+                    f'response reason: {res.reason}.'
+                )
         return api_id, api_hash
 
 

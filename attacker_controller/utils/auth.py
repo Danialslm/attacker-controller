@@ -42,7 +42,7 @@ async def _create_application(
                 'Error in creating web application. '
                 f'request response status code: {res.status}. '
                 f'response reason: {res.reason}.'
-                )
+            )
             return False
         return True
 
@@ -149,9 +149,7 @@ async def login(phone: str, password: str) -> Tuple[bool, str]:
                         # get telegram cookie after login
                         stel_token = res.cookies.get('stel_token').value
 
-                        result = await _get_api_id_and_api_hash(
-                            session, stel_token
-                        )
+                        result = await _get_api_id_and_api_hash(session, stel_token)
                         if result:
                             api_id, api_hash = result
                         else:

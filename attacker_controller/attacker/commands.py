@@ -574,7 +574,7 @@ async def get_group_members(client: Client, message: Message):
                     continue
 
                 member_counter += 1
-                text += f'{member_counter} - {member.user.username if member.user.username else member.user.id}\n'
+                text += f'{member_counter} - {"@" + member.user.username if member.user.username else member.user.id}\n'
 
                 # send members in lists of 50
                 if member_counter % 50 == 0:

@@ -100,20 +100,26 @@ async def attacker_list(client: Client, message: Message):
     await message.reply(text)
 
 
+async def _remove_attacker(phone):
+    try:
+        async with await Attacker.init(phone) as attacker:
+            await attacker.log_out()
+    except:
+        pass
+    remove_attacker_session(phone)
+    await storage.remove_attacker(phone)
+
+
 @app.on_message(
     filters.regex(r'^\/removeattacker (\+\d+(?:\s+\+\d+)*)$') & ~filters.edited & admin
 )
 async def remove_attacker(client: Client, message: Message):
     """Remove the given phone(s) from attacker list."""
     phones = message.matches[0].group(1).split()
-    for phone in phones:
-        try:
-            async with await Attacker.init(phone) as attacker:
-                await attacker.log_out()
-        except:
-            pass
-        remove_attacker_session(phone)
-        await storage.remove_attacker(phone)
+    await asyncio.gather(*[
+        _remove_attacker(phone)
+        for phone in phones
+    ])
     await message.reply_text('شماره(های) داده شده از لیست اتکر‌ها حذف شد.')
 
 
@@ -122,15 +128,10 @@ async def remove_attacker(client: Client, message: Message):
 )
 async def clean_attacker_list(client: Client, message: Message):
     """Remove all attackers."""
-    for phone in await storage.get_attackers():
-        try:
-            async with await Attacker.init(phone) as attacker:
-                await attacker.log_out()
-        except:
-            pass
-        remove_attacker_session(phone)
-        await storage.remove_attacker(phone)
-
+    await asyncio.gather(*[
+        _remove_attacker(phone)
+        for phone in await storage.get_attackers()
+    ])
     await message.reply_text('تمام اتکرها از ربات پاک شدند.')
 
 

@@ -28,7 +28,7 @@ async def _web_login(phone: str) -> str:
 
     def _error(err_reason):
         return (
-            'خطایی هنگام ورود به https://my.telegram.org به وجود آمد و اکانت لاگ اوت شد.\n'
+            'خطایی هنگام ورود به https://my.telegram.org به وجود آمد.\n'
             'دلیل خطا:\n{}'.format(err_reason)
         )
 
@@ -142,7 +142,7 @@ async def send_code(client: Client, message: Message):
             type_text = 'تماس تلفنی'
         else:
             type_text = sent_code.type
-        # store phone code hash for one minute
+        # store phone code hash for one minute. it's needed in login step
         await storage.redis.set(
             f'phone_code_hash:{phone}', sent_code.phone_code_hash, 60
         )
@@ -161,20 +161,19 @@ async def send_code(client: Client, message: Message):
 async def login_attacker(client: Client, message: Message):
     """Login to account by provided credentials."""
     global LOGGING_ATTACKER
-
-    phone = message.matches[0].group(1)
     # user must requested login code for the phone
     if LOGGING_ATTACKER is None or not LOGGING_ATTACKER.is_connected:
         await message.reply_text(
-            'مطمئن باشید قبل از لاگین به اکانت درخواست ارسال کد برای این شماره را کرده اید.'
+            'مطمئن باشید قبل از لاگین به اکانت درخواست ارسال کد را کرده اید.'
         )
         return
 
+    phone = message.matches[0].group(1)
     phone_code_hash = await storage.redis.get(f'phone_code_hash:{phone}') or ''
 
     args = message.matches[0].group(2).split()
     code, password = args[0], None
-    # set the password if the user provided it
+    # get the password if the user provided it
     if len(args) == 2:
         password = args[1]
 
@@ -211,7 +210,7 @@ async def login_attacker(client: Client, message: Message):
     except Exception as e:
         exception_class = e.__class__.__name__
         await status_msg.edit(
-            'خطای غیر منتظره‌ای هنگام ارسال کد رخ داده است. {} - {}'.format(
+            'خطای غیر منتظره‌ای هنگام ورود به اکانت رخ داده است. {} - {}'.format(
                 exception_class, e
             )
         )

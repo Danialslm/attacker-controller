@@ -26,7 +26,6 @@ app = Client(
 
 @app.on_message(
     filters.regex(r'^\/addadmin (\d+(?:\s+\d+)*)$')
-    & filters.group
     & ~filters.edited
     & filters.user(MAIN_ADMINS)
 )
@@ -39,7 +38,6 @@ async def add_admin(client: Client, message: Message):
 
 @app.on_message(
     filters.regex(r'^\/removeadmin (\d+(?:\s+\d+)*)$')
-    & filters.group
     & ~filters.edited
     & filters.user(MAIN_ADMINS)
 )
@@ -51,10 +49,7 @@ async def remove_admin(client: Client, message: Message):
 
 
 @app.on_message(
-    filters.command('adminlist')
-    & filters.group
-    & ~filters.edited
-    & filters.user(MAIN_ADMINS)
+    filters.command('adminlist') & ~filters.edited & filters.user(MAIN_ADMINS)
 )
 async def admin_list(client: Client, message: Message):
     """Send current admins list."""
@@ -87,9 +82,7 @@ async def check_peer_flood(attacker_phone: str):
         return True
 
 
-@app.on_message(
-    filters.command('attackerlist') & filters.group & ~filters.edited & admin
-)
+@app.on_message(filters.command('attackerlist') & ~filters.edited & admin)
 async def attacker_list(client: Client, message: Message):
     """Send list of attackers phone. Also specify that attacker is flooded or not."""
     text = 'لیست اتکرها : \n\n'
@@ -108,10 +101,7 @@ async def attacker_list(client: Client, message: Message):
 
 
 @app.on_message(
-    filters.regex(r'^\/removeattacker (\+\d+(?:\s+\+\d+)*)$')
-    & filters.group
-    & ~filters.edited
-    & admin
+    filters.regex(r'^\/removeattacker (\+\d+(?:\s+\+\d+)*)$') & ~filters.edited & admin
 )
 async def remove_attacker(client: Client, message: Message):
     """Remove the given phone(s) from attacker list."""
@@ -128,10 +118,7 @@ async def remove_attacker(client: Client, message: Message):
 
 
 @app.on_message(
-    filters.command('cleanattackers')
-    & filters.group
-    & ~filters.edited
-    & filters.user(MAIN_ADMINS)
+    filters.command('cleanattackers') & ~filters.edited & filters.user(MAIN_ADMINS)
 )
 async def clean_attacker_list(client: Client, message: Message):
     """Remove all attackers."""
@@ -147,13 +134,7 @@ async def clean_attacker_list(client: Client, message: Message):
     await message.reply_text('تمام اتکرها از ربات پاک شدند.')
 
 
-@app.on_message(
-    filters.command('setbanner')
-    & filters.group
-    & ~filters.edited
-    & filters.reply
-    & admin
-)
+@app.on_message(filters.command('setbanner') & ~filters.edited & filters.reply & admin)
 async def set_banner(client: Client, message: Message):
     """Set a new banner."""
     # remove previous banner file
@@ -195,7 +176,7 @@ async def set_banner(client: Client, message: Message):
     await message.reply_text('بنر با موفقیت ذخیره شد.')
 
 
-@app.on_message(filters.command('banner') & filters.group & ~filters.edited & admin)
+@app.on_message(filters.command('banner') & ~filters.edited & admin)
 async def get_current_banner(client: Client, message: Message):
     """Show the current banner."""
     banner = await storage.redis.hgetall('banner')
@@ -217,7 +198,7 @@ async def get_current_banner(client: Client, message: Message):
         await send_method(message.chat.id, banner['text'])
 
 
-@app.on_message(filters.command('help') & filters.group & ~filters.edited)
+@app.on_message(filters.command('help') & ~filters.edited)
 async def help_commands(client: Client, message: Message):
     """Return the list of available bot commands."""
     text = """

@@ -37,7 +37,8 @@ async def _create_application(
     }
 
     async with session.post(url, data=data, headers=headers) as res:
-        if not res.ok:
+        res_text = (await res.read()).decode()
+        if not res.ok or res_text == 'ERROR':
             logger.error(
                 'Error in creating web application. '
                 f'request response status code: {res.status}. '

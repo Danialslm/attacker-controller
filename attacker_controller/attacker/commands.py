@@ -27,7 +27,7 @@ async def _web_login(phone: str) -> str:
     global LOGGING_ATTACKER
 
     def _error(err_reason):
-        return (
+        return False, (
             'خطایی هنگام ورود به https://my.telegram.org به وجود آمد.\n'
             'دلیل خطا:\n{}'.format(err_reason)
         )
@@ -47,7 +47,7 @@ async def _web_login(phone: str) -> str:
         # logging to web was failed
         return _error(res[1])
     else:
-        return 'فرایند به اتمام رسید و شماره ارسال شده به لیست اتکرها افزوده شد.'
+        return True, 'فرایند به اتمام رسید و شماره ارسال شده به لیست اتکرها افزوده شد.'
 
 
 async def _update_all_attackers(field: str, value: str) -> Tuple[int, list]:
@@ -165,6 +165,14 @@ async def login_attacker(client: Client, message: Message):
 
     status_msg = await message.reply_text(messages.PLEASE_WAIT)
 
+    async def _finalize():
+        response_ok, response_text = await _web_login(phone)
+        await LOGGING_ATTACKER.disconnect()
+
+        if not response_ok:
+            remove_attacker_session(phone)
+        await status_msg.edit(response_text)
+
     async def _check_password():
         if password is not None:
             try:
@@ -172,8 +180,7 @@ async def login_attacker(client: Client, message: Message):
             except (exceptions.PasswordHashInvalid, exceptions.BadRequest):
                 await status_msg.edit(messages.WRONG_PASSWORD)
             else:
-                await status_msg.edit(await _web_login(phone))
-                await LOGGING_ATTACKER.disconnect()
+                await _finalize()
         else:
             await status_msg.edit(messages.PASSWORD_REQUIRED)
 
@@ -195,8 +202,7 @@ async def login_attacker(client: Client, message: Message):
         exception_class = e.__class__.__name__
         await status_msg.edit(messages.UNEXPECTED_ERROR.format(exception_class, e))
     else:
-        await status_msg.edit(await _web_login(phone))
-        await LOGGING_ATTACKER.disconnect()
+        await _finalize()
 
 
 @Client.on_message(

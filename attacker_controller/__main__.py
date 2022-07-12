@@ -117,10 +117,7 @@ async def _remove_attacker(phone):
 async def remove_attacker(client: Client, message: Message):
     """Remove the given phone(s) from attacker list."""
     phones = message.matches[0].group(1).split()
-    await asyncio.gather(*[
-        _remove_attacker(phone)
-        for phone in phones
-    ])
+    await asyncio.gather(*[_remove_attacker(phone) for phone in phones])
     await message.reply_text('شماره(های) داده شده از لیست اتکر‌ها حذف شد.')
 
 
@@ -129,10 +126,9 @@ async def remove_attacker(client: Client, message: Message):
 )
 async def clean_attacker_list(client: Client, message: Message):
     """Remove all attackers."""
-    await asyncio.gather(*[
-        _remove_attacker(phone)
-        for phone in await storage.get_attackers()
-    ])
+    await asyncio.gather(
+        *[_remove_attacker(phone) for phone in await storage.get_attackers()]
+    )
     await message.reply_text('تمام اتکرها از ربات پاک شدند.')
 
 

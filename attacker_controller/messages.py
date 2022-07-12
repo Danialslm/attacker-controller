@@ -13,7 +13,9 @@ BANNER_SAVED = 'بنر با موفقیت ذخیره شد.'
 NO_BANNER_SET = 'بنری ست نشده است.'
 
 # logging-in
-SEND_CODE_FLOOD = 'ارسال درخواست با محدودیت مواجه شده است. لطفا {} ثانیه دیگر امتحان کنید.'
+SEND_CODE_FLOOD = (
+    'ارسال درخواست با محدودیت مواجه شده است. لطفا {} ثانیه دیگر امتحان کنید.'
+)
 PHONE_NUMBER_INVALID = 'شماره وارد شده نادرست است.'
 APP_CODE_SENT = 'پیام در پیوی تلگرام'
 SMS_CODE_SENT = 'اس ام اس'
@@ -21,7 +23,9 @@ CALL_CODE_SENT = 'تماس تلفنی'
 CODE_SENT = 'کد به صورت {} ارسال شد.'
 SEND_CODE_REQUEST = 'مطمئن باشید قبل از لاگین به اکانت درخواست ارسال کد را کرده اید.'
 WRONG_PASSWORD = 'پسورد اشتباه است!'
-PASSWORD_REQUIRED = 'اکانت دارای پسورد می‌باشد. لطفا پسورد را بعد از کد با یک فاصله ارسال کنید.'
+PASSWORD_REQUIRED = (
+    'اکانت دارای پسورد می‌باشد. لطفا پسورد را بعد از کد با یک فاصله ارسال کنید.'
+)
 INVALID_CODE = 'کد منقضی یا اشتباه است.'
 PHONE_NUMBER_UNOCCUPIED = 'شماره تلفن هنوز استفاده نمی‌شود.'
 SIGNIN_FAILED = 'فرایند لاگین ناموفق بود.'
@@ -30,13 +34,19 @@ SIGNIN_FAILED = 'فرایند لاگین ناموفق بود.'
 TEXT_REPLY_REQUIRED = 'لطفا روی یک متن ریپلای بزنید و دستور را بفرستید.'
 PHOTO_REPLY_REQUIRED = 'لطفا روی یک عکس ریپلای بزنید و دستور را بفرستید.'
 ALL_FIRST_NAME_UPDATED = '{} اتکر نام کوچک‌شان به **{}** تغییر یافت.'
-PROBLEM_WITH_UPDATING_ALL_FIRST_NAME = '\nمشکلی در تغییر نام کوچک اتکرهای زیر به وجود آمد.\n'
+PROBLEM_WITH_UPDATING_ALL_FIRST_NAME = (
+    '\nمشکلی در تغییر نام کوچک اتکرهای زیر به وجود آمد.\n'
+)
 ALL_LAST_NAME_UPDATED = '{} اتکر نام خانوادگی‌شان به **{}** تغییر یافت.'
-PROBLEM_WITH_UPDATING_ALL_LAST_NAME = '\nمشکلی در تغییر نام خانوادگی اتکرهای زیر به وجود آمد.\n'
+PROBLEM_WITH_UPDATING_ALL_LAST_NAME = (
+    '\nمشکلی در تغییر نام خانوادگی اتکرهای زیر به وجود آمد.\n'
+)
 ALL_BIOGRAPPHY_UPDATED = '{} اتکر بیو‌شان به **{}** تغییر یافت.'
 PROBLEM_WITH_UPDATING_ALL_BIOGRAPHY = '\nمشکلی در تغییر بیو اتکرهای زیر به وجود آمد.\n'
 ALL_PROFILE_PHOTO_UPDATED = '{} اتکر عکس پروفایل‌شان تغییر یافت.'
-PROBLEM_WITH_UPDATING_ALL_PROFILE_PHOTO = '\nمشکلی در تغییر پروفایل اتکرهای زیر به وجود آمد.\n'
+PROBLEM_WITH_UPDATING_ALL_PROFILE_PHOTO = (
+    '\nمشکلی در تغییر پروفایل اتکرهای زیر به وجود آمد.\n'
+)
 
 # update single attacker
 FIRST_NAME_UPDATED = 'اتکر {} نام کوچکش به **{}** تغییر یافت.'

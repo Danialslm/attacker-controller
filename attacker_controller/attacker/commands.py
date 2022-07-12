@@ -273,9 +273,7 @@ async def set_bio_all(client: Client, message: Message):
         'bio', provided_bio
     )
 
-    text = messages.ALL_BIOGRAPPHY_UPDATED.format(
-        number_of_successes, provided_bio
-    )
+    text = messages.ALL_BIOGRAPPHY_UPDATED.format(number_of_successes, provided_bio)
     if unsuccessful_phones:
         text += messages.PROBLEM_WITH_UPDATING_ALL_BIOGRAPHY
         text += '\n'.join(unsuccessful_phones)
@@ -334,9 +332,13 @@ async def set_first_name(client: Client, message: Message):
         await status_msg.edit(messages.SESSION_EXPIRED.format(phone))
     else:
         if success:
-            await status_msg.edit(messages.FIRST_NAME_UPDATED.format(phone, provided_first_name))
+            await status_msg.edit(
+                messages.FIRST_NAME_UPDATED.format(phone, provided_first_name)
+            )
         else:
-            await status_msg.edit(messages.PROBLEM_WITH_UPDATING_FIRST_NAME.format(phone))
+            await status_msg.edit(
+                messages.PROBLEM_WITH_UPDATING_FIRST_NAME.format(phone)
+            )
 
 
 @Client.on_message(filters.regex(r'^\/setlastname (\+\d+)$') & ~filters.edited & admin)
@@ -359,9 +361,13 @@ async def set_last_name(client: Client, message: Message):
         await status_msg.edit(messages.SESSION_EXPIRED.format(phone))
     else:
         if success:
-            await status_msg.edit(messages.LAST_NAME_UPDATED.format(phone, provided_last_name))
+            await status_msg.edit(
+                messages.LAST_NAME_UPDATED.format(phone, provided_last_name)
+            )
         else:
-            await status_msg.edit(messages.PROBLEM_WITH_UPDATING_LAST_NAME.format(phone))
+            await status_msg.edit(
+                messages.PROBLEM_WITH_UPDATING_LAST_NAME.format(phone)
+            )
 
 
 @Client.on_message(filters.regex(r'^\/setbio (\+\d+)$') & ~filters.edited & admin)
@@ -384,9 +390,13 @@ async def set_bio(client: Client, message: Message):
         await status_msg.edit(messages.SESSION_EXPIRED.format(phone))
     else:
         if success:
-            await status_msg.edit(messages.BIOGRAPHY_UPDATED.format(phone, provided_bio))
+            await status_msg.edit(
+                messages.BIOGRAPHY_UPDATED.format(phone, provided_bio)
+            )
         else:
-            await status_msg.edit(messages.PROBLEM_WITH_UPDATING_BIOGRAPHY.format(phone))
+            await status_msg.edit(
+                messages.PROBLEM_WITH_UPDATING_BIOGRAPHY.format(phone)
+            )
 
 
 @Client.on_message(filters.regex(r'^\/setprofile (\+\d+)$') & ~filters.edited & admin)
@@ -415,9 +425,13 @@ async def set_profile_photo(client: Client, message: Message):
         await status_msg.edit(messages.SESSION_EXPIRED.format(phone))
     else:
         if success:
-            await status_msg.edit(messages.PROFILE_PHOTO_UPDATED.format(phone, provided_photo))
+            await status_msg.edit(
+                messages.PROFILE_PHOTO_UPDATED.format(phone, provided_photo)
+            )
         else:
-            await status_msg.edit(messages.PROBLEM_WITH_UPDATING_PROFILE_PHOTO.format(phone))
+            await status_msg.edit(
+                messages.PROBLEM_WITH_UPDATING_PROFILE_PHOTO.format(phone)
+            )
     finally:
         os.remove('media/profile_photo.jpg')
 
@@ -442,7 +456,9 @@ async def set_username(client: Client, message: Message):
         await status_msg.edit(messages.SESSION_EXPIRED.format(phone))
     else:
         if success:
-            await status_msg.edit(messages.USERNAME_UPDATED.format(phone, provided_username))
+            await status_msg.edit(
+                messages.USERNAME_UPDATED.format(phone, provided_username)
+            )
         else:
             await status_msg.edit(messages.PROBLEM_WITH_UPDATING_USERNAME.format(phone))
 

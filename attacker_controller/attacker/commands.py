@@ -610,6 +610,7 @@ async def attack(client: Client, message: Message):
     except exceptions.AuthKeyUnregistered:
         await status_msg.edit(messages.PLEASE_WAIT.format(phone))
     except Exception as e:
+        logger.exception(e)
         exception_class = e.__class__.__name__
         await status_msg.edit(messages.UNEXPECTED_ERROR.format(exception_class, e))
     else:

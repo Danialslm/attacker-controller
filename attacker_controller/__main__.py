@@ -79,7 +79,7 @@ async def check_attacker(attacker_phone: str):
             await asyncio.sleep(1)
             spam_bot_reply = await attacker.get_history('spambot', limit=1)
             spam_bot_reply_text = spam_bot_reply[0].text
-            if 'no limits' in spam_bot_reply_text:
+            if 'no limits' not in spam_bot_reply_text:
                 return 'limited'
 
     except UserDeactivatedBan:

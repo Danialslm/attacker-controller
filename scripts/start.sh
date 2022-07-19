@@ -7,6 +7,4 @@ fi
 PROJECT_PATH=$(dirname $(cd "$(dirname "$0")" && pwd))
 export PYTHONPATH=$PROJECT_PATH
 
-source $PROJECT_PATH/.venv/bin/activate
-
-python $PROJECT_PATH/attacker_controller
+$PROJECT_PATH/.venv/bin/python $PROJECT_PATH/attacker_controller

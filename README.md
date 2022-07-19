@@ -2,7 +2,7 @@
 
 ### A telegram bot written in Python(pyrogram) for managing mtproto bots
 
-## How run it (linux)?
+## Installation (linux)
 
 first copy the `.env.sample` to `.env` by running `cp .env.sample .env` and fill it
 
@@ -21,3 +21,5 @@ and `.venv/bin/activate` to activate it
 
 when the virtual-environment activated, install the project dependencies by running `pip install -r requirements.txt`
 
+### Run
+run `scripts/start.sh` to run the bot

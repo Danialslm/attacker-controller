@@ -4,6 +4,7 @@ import os
 from decouple import config
 from pyrogram import Client, filters
 from pyrogram.types import Message
+from pyrogram.errors.exceptions import UserDeactivatedBan
 
 from attacker_controller import MAIN_ADMINS
 from attacker_controller.attacker import Attacker
@@ -63,24 +64,26 @@ async def admin_list(client: Client, message: Message):
     await message.reply_text(text)
 
 
-async def check_peer_flood(attacker_phone: str):
+async def check_attacker(attacker_phone: str):
     """
-    Check the attacker has any limitation with @spambot.
+    Check the attacker status.
 
-    Return True if the given attacker is limited and False if it isn't.
+    Return `limited` if the given attacker was limited or `deleted` if the attacker account was deleted.
     """
-    async with await Attacker.init(attacker_phone) as attacker:
-        await attacker.unblock_user('spambot')
-        await attacker.send_message('spambot', '/start')
+    try:
+        async with await Attacker.init(attacker_phone) as attacker:
+            await attacker.unblock_user('spambot')
+            await attacker.send_message('spambot', '/start')
 
-        # sleep for a while to get spambot reply
-        await asyncio.sleep(1)
-        spam_bot_reply = await attacker.get_history('spambot', limit=1)
-        spam_bot_reply_text = spam_bot_reply[0].text
-        if 'no limits' in spam_bot_reply_text:
-            return False
+            # sleep for a while to get spambot reply
+            await asyncio.sleep(1)
+            spam_bot_reply = await attacker.get_history('spambot', limit=1)
+            spam_bot_reply_text = spam_bot_reply[0].text
+            if 'no limits' in spam_bot_reply_text:
+                return 'limited'
 
-        return True
+    except UserDeactivatedBan:
+        return 'deleted/deactivated'
 
 
 @app.on_message(filters.command('attackerlist') & ~filters.edited & admin)
@@ -88,14 +91,14 @@ async def attacker_list(client: Client, message: Message):
     """Send list of attackers phone. Also specify that attacker is flooded or not."""
     text = messages.ATTACKER_LIST
     attackers = await storage.get_attackers()
-    tasks = [asyncio.create_task(check_peer_flood(attacker)) for attacker in attackers]
-    peer_flood_result = await asyncio.gather(*tasks)
+    tasks = [asyncio.create_task(check_attacker(attacker)) for attacker in attackers]
+    atks_status = await asyncio.gather(*tasks)
 
     attacker_counter = 0
-    for attacker, flooded in zip(attackers, peer_flood_result):
+    for attacker, status in zip(attackers, atks_status):
         attacker_counter += 1
         text += f'{attacker_counter} - `{attacker}`' + (
-            ' (limited)\n' if flooded else '\n'
+            f' ({status})\n' if status else '\n'
         )
 
     await message.reply(text)

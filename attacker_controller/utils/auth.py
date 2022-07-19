@@ -10,6 +10,14 @@ from attacker_controller import logger
 timeout = ClientTimeout(total=10)
 
 
+def create_web_application_res_error(res):
+    logger.error(
+        'Error in creating web application. '
+        f'request response status code: {res.status}. '
+        f'response reason: {res.reason}.'
+    )
+
+
 async def _create_application(
     session: ClientSession,
     stel_token: str,
@@ -39,11 +47,7 @@ async def _create_application(
     async with session.post(url, data=data, headers=headers) as res:
         res_text = (await res.read()).decode()
         if not res.ok or res_text == 'ERROR':
-            logger.error(
-                'Error in creating web application. '
-                f'request response status code: {res.status}. '
-                f'response reason: {res.reason}.'
-            )
+            create_web_application_res_error(res)
             return False
         return True
 
@@ -62,6 +66,10 @@ async def _get_api_id_and_api_hash(
     }
 
     async with session.get(url, headers=headers) as res:
+        if not res.ok:
+            create_web_application_res_error(res)
+            return
+
         html_content = await res.read()
         soup = BeautifulSoup(html_content.decode(), 'html.parser')
         # check with the title page whether the app was already created or not
@@ -71,17 +79,14 @@ async def _get_api_id_and_api_hash(
             app_hash = soup.find("input", {"name": "hash"}).get("value")
             if await _create_application(session, stel_token, app_hash):
                 api_id, api_hash = await _get_api_id_and_api_hash(session, stel_token)
+            else:
+                return
+
         elif page_title == 'App configuration':
             inputs = soup.find_all("span", {"class": "input-xlarge"})
             api_id = inputs[0].string
             api_hash = inputs[1].string
-        else:
-            if not res.ok:
-                logger.error(
-                    'Error in getting api id and api hash. '
-                    f'request response status code: {res.status}. '
-                    f'response reason: {res.reason}.'
-                )
+
         return api_id, api_hash
 
 

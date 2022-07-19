@@ -1,6 +1,6 @@
 # Attacker controller
 
-### A telegram bot written in Python(pyrogram) for managing mtproto bots
+### A telegram bot written in Python(pyrogram) for managing mtproto clients which call "attacker" in the entire project.
 
 ## Installation (linux)
 

@@ -559,6 +559,8 @@ async def start_attack(
             # wait as long as flood wait time and then get start where the flood occurred
             await message.edit(messages.ATTACKING_FLOOD.format(e.x, succeed_attacks))
             await asyncio.sleep(e.x)
+            await message.edit(messages.PLEASE_WAIT)
+
             targets = targets[index:]
             _succeed_attacks, _ = await start_attack(
                 attacker, message, targets, method, banner

@@ -265,7 +265,7 @@ async def set_bio_all(client: Client, message: Message):
         await message.reply_text(messages.TEXT_REPLY_REQUIRED)
         return
 
-    status_msg = await message.reply_text(messages.TEXT_REPLY_REQUIRED)
+    status_msg = await message.reply_text(messages.PLEASE_WAIT)
 
     number_of_successes, unsuccessful_phones = await _update_all_attackers(
         'bio', provided_bio
@@ -349,7 +349,7 @@ async def set_last_name(client: Client, message: Message):
         await message.reply_text(messages.TEXT_REPLY_REQUIRED)
         return
 
-    status_msg = await message.reply_text(messages.PLEASE_WAIT.format(phone))
+    status_msg = await message.reply_text(messages.PLEASE_WAIT)
 
     try:
         success = await _update_attacker(phone, 'last_name', provided_last_name)

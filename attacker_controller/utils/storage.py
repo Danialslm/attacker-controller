@@ -56,3 +56,63 @@ async def remove_attacker(phone: str) -> int:
     """Remove the given phone from attackers."""
     await redis.srem('attackers', phone)
     return await redis.delete('attacker:' + phone)
+
+
+async def set_phone_code_hash(
+    phone: str, phone_code_hash: str, *args, **kwargs
+) -> None:
+    """Set phone_code_hash for given phone."""
+    await redis.set(f'phone_code_hash:{phone}', phone_code_hash, *args, **kwargs)
+
+
+async def get_phone_code_hash(phone: str) -> str:
+    """Get given phone phone_code_hash."""
+    return await redis.get(f'phone_code_hash:{phone}')
+
+
+async def set_random_hash(phone: str, random_hash: str, *args, **kwargs) -> None:
+    """Store random_hash for given phone."""
+    await redis.set(f'random_hash:{phone}', random_hash, *args, **kwargs)
+
+
+async def get_random_hash(phone: str) -> str:
+    """Get given phone random hash."""
+    return redis.get(f'random_hash:{phone}')
+
+
+async def set_banner(text: str, media_ext: str, media_type: str) -> None:
+    """Set banner with provided data."""
+    await redis.hset(
+        'banner',
+        mapping={
+            'text': text,
+            'media_ext': media_ext,
+            'media_type': media_type,
+        },
+    )
+
+
+async def get_banner() -> dict:
+    """Get banner data."""
+    return await redis.hgetall('banner')
+
+
+async def get_attacking_attackers(phone=Optional[str]) -> Union[bool, set]:
+    """
+    Get list of attacking attackers or a phone is attacking.
+
+    If phone was provided, a boolean which shows attacker with the phone is attacking will return.
+    """
+    if phone:
+        return await redis.sismember('attacking_attackers', phone)
+    return await redis.smembers('attacking_attackers')
+
+
+async def set_attacking_attacker(*phones):
+    """Set one or many phones to attacking attackers."""
+    await redis.sadd(*phones)
+
+
+async def remove_attacking_attackers(*phones):
+    """Remove one or many phones from attacking attackers"""
+    await redis.srem(*phones)

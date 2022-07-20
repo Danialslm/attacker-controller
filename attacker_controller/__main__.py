@@ -166,13 +166,10 @@ async def set_banner(client: Client, message: Message):
     )
 
     # store the banner in cache
-    await storage.redis.hset(
-        'banner',
-        mapping={
-            'text': banner_text,
-            'media_ext': banner_media_ext,
-            'media_type': banner_media_type,
-        },
+    await storage.set_banner(
+        banner_text,
+        banner_media_ext,
+        banner_media_type,
     )
     await message.reply_text(messages.BANNER_SAVED)
 
@@ -180,7 +177,7 @@ async def set_banner(client: Client, message: Message):
 @app.on_message(filters.command('banner') & ~filters.edited & admin)
 async def get_current_banner(client: Client, message: Message):
     """Show the current banner."""
-    banner = await storage.redis.hgetall('banner')
+    banner = await storage.get_banner()
 
     if not banner:
         await message.reply_text(messages.NO_BANNER_SET)

@@ -4,7 +4,7 @@ from typing import Tuple
 from aiohttp import ClientSession, ClientTimeout
 from bs4 import BeautifulSoup
 
-from attacker_controller.utils.storage import redis, add_new_attacker
+from attacker_controller.utils import storage
 from attacker_controller import logger
 
 timeout = ClientTimeout(total=10)
@@ -112,7 +112,7 @@ async def send_password(phone: str) -> Tuple[bool, str]:
                         random_hash = res_data.get('random_hash')
 
                         # store random_hash for web login step
-                        await redis.set(f'random_hash:{phone}', random_hash, 60)
+                        await storage.set_random_hash(phone, random_hash, 60)
                         return True, random_hash
 
                 res_text = await res.read()
@@ -132,7 +132,7 @@ async def login(phone: str, password: str) -> Tuple[bool, str]:
     Return a tuple which contains a boolean that shows the proccess was successful and response error text.
     """
     # get `random_hash` by phone number
-    random_hash = await redis.get(f'random_hash:{phone}')
+    random_hash = await storage.get_random_hash(phone)
     if not random_hash:
         return False, 'هش کد منقضی یا نامعتبر است.'
 
@@ -160,7 +160,7 @@ async def login(phone: str, password: str) -> Tuple[bool, str]:
                             api_id, api_hash = result
                         else:
                             return False, 'مشکلی در گرفتن api id و api hash وجود دارد.'
-                        await add_new_attacker(phone, api_id, api_hash)
+                        await storage.add_new_attacker(phone, api_id, api_hash)
                         return True, None
 
                 res_text = await res.read()

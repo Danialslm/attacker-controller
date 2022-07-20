@@ -133,9 +133,7 @@ async def send_code(client: Client, message: Message):
         else:
             type_text = sent_code.type
         # store phone code hash for one minute. it's needed in login step
-        await storage.redis.set(
-            f'phone_code_hash:{phone}', sent_code.phone_code_hash, 60
-        )
+        await storage.set_phone_code_hash(phone, sent_code.phone_code_hash, 60)
         await status_msg.edit(messages.CODE_SENT.format(type_text))
     finally:
         # only if the code didn't send, disconnect the client
@@ -155,7 +153,7 @@ async def login_attacker(client: Client, message: Message):
         return
 
     phone = message.matches[0].group(1)
-    phone_code_hash = await storage.redis.get(f'phone_code_hash:{phone}') or ''
+    phone_code_hash = await storage.get_phone_code_hash(phone) or ''
 
     args = message.matches[0].group(2).split()
     code, password = args[0], None
@@ -581,12 +579,12 @@ async def attack(client: Client, message: Message):
     phone = message.matches[0].group(1)
 
     # it is not possible to attack multiple places simultaneously
-    if await storage.redis.sismember('attacking_attackers', phone):
+    if await storage.get_attacking_attackers():
         await message.reply_text(messages.ATTACKER_IS_BUSY)
         return
 
     # check banner was set
-    banner = await storage.redis.hgetall('banner')
+    banner = await storage.get_banner()
     if not bool(banner):
         await message.reply(messages.NO_BANNER_SET)
         return
@@ -601,7 +599,7 @@ async def attack(client: Client, message: Message):
     method = get_send_method_by_media_type(banner['media_type'])
     try:
         async with await Attacker.init(phone) as attacker:
-            await storage.redis.sadd('attacking_attackers', phone)
+            await storage.set_attacking_attacker(phone)
             succeed_attacks, is_flooded = await start_attack(
                 attacker, status_msg, targets, method, banner
             )
@@ -623,4 +621,4 @@ async def attack(client: Client, message: Message):
             text = messages.ATTACK_FINISHED.format(succeed_attacks)
         await status_msg.edit(text)
     finally:
-        await storage.redis.srem('attacking_attackers', phone)
+        await storage.remove_attacking_attackers(phone)

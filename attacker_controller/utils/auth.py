@@ -1,7 +1,7 @@
 from asyncio.exceptions import TimeoutError
-from typing import Tuple
+from typing import Tuple, Union
 
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientResponse, ClientSession, ClientTimeout
 from bs4 import BeautifulSoup
 
 from attacker_controller.utils import storage
@@ -10,7 +10,7 @@ from attacker_controller import logger
 timeout = ClientTimeout(total=10)
 
 
-def create_web_application_res_error(res):
+def _create_web_application_res_error(res: ClientResponse):
     logger.error(
         'Error in creating web application. '
         f'request response status code: {res.status}. '
@@ -31,7 +31,8 @@ async def _create_application(
     """
     Create a new application by provided credentials.
 
-    URL: 'https://my.telegram.org/apps/create'
+    Returns:
+        bool: True if the application created, False otherwise.
     """
     url = 'https://my.telegram.org/apps/create'
     headers = {'Cookie': 'stel_token=' + stel_token}
@@ -47,18 +48,21 @@ async def _create_application(
     async with session.post(url, data=data, headers=headers) as res:
         res_text = (await res.read()).decode()
         if not res.ok or res_text == 'ERROR':
-            create_web_application_res_error(res)
+            _create_web_application_res_error(res)
             return False
         return True
 
 
 async def _get_api_id_and_api_hash(
     session: ClientSession, stel_token: str
-) -> Tuple[str, str]:
+) -> Union[Tuple[str, str], None]:
     """
     Get `api_id` and `api_hash` by scraping on https://my.telegram.org/apps.
 
-    If account doesn't have an application, create one.
+    An application will create If account doesn't have yet.
+
+    Returns:
+        Union[Tuple[str, str], None]: Contains `api_id` and `api_hash`. if the application didn't create, None will return.
     """
     url = 'https://my.telegram.org/apps'
     headers = {
@@ -67,7 +71,7 @@ async def _get_api_id_and_api_hash(
 
     async with session.get(url, headers=headers) as res:
         if not res.ok:
-            create_web_application_res_error(res)
+            _create_web_application_res_error(res)
             return
 
         html_content = await res.read()
@@ -94,8 +98,13 @@ async def send_password(phone: str) -> Tuple[bool, str]:
     """
     Send password to given phone number telegram account by requesting to https://my.telegram.org/auth/send_password.
 
-    Return a tuple which contains boolean that shows the request sent successfully and a string
-    that may be `random_hash` if request was successful or response error text.
+    Args:
+        phone (str): Account phone number.
+
+    Returns:
+        Tuple[bool, str]: Contains success of the process and `random_hash`.
+
+        If the process was not successfull, a error message will consider instead of `random_hash`.
     """
     url = 'https://my.telegram.org/auth/send_password'
     data = {'phone': phone}
@@ -125,11 +134,18 @@ async def send_password(phone: str) -> Tuple[bool, str]:
             )
 
 
-async def login(phone: str, password: str) -> Tuple[bool, str]:
+async def login(phone: str, password: str) -> Tuple[bool, Union[str, None]]:
     """
-    Login account with provided credentials by requesting to https://my.telegram.org/auth/login
+    Login account with provided credentials by requesting to https://my.telegram.org/auth/login.
 
-    Return a tuple which contains a boolean that shows the proccess was successful and response error text.
+    Args:
+        phone (str): Account phone number.
+        password (str): Temporary password that telegram sent.
+
+    Returns:
+        Tuple[bool, Union[str, None]]: Contains success of the process and error message.
+
+        If the process was successful, the error message will be None.
     """
     # get `random_hash` by phone number
     random_hash = await storage.get_random_hash(phone)

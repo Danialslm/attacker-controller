@@ -13,6 +13,6 @@ REDIS_URL = config('redis_uri')
 logging.basicConfig(
     level='INFO' if DEBUG else 'ERROR',
     filename='error.log' if not DEBUG else None,
-    format='%(asctime)s-%(levelname)s:%(name)s:%(message)s'
+    format='%(asctime)s-%(levelname)s:%(name)s:%(message)s',
 )
 logger = logging.getLogger(__name__)

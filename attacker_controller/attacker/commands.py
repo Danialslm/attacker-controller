@@ -22,8 +22,14 @@ from attacker_controller.utils.custom_filters import admin
 LOGGING_ATTACKER: Union[Client, None] = None
 
 
-async def _web_login(phone: str) -> str:
-    """Login to the web application."""
+async def _web_login(phone: str) -> Tuple[bool, str]:
+    """
+    Login to the web application.
+
+    Returns:
+        tuple: Contains a bool that shows the proccess was successful or not and
+        a str that can be error message or success message.
+    """
     global LOGGING_ATTACKER
 
     def _error(err_reason):
@@ -52,9 +58,15 @@ async def _web_login(phone: str) -> str:
 
 async def _update_all_attackers(field: str, value: str) -> Tuple[int, list]:
     """
-    Update all available attackers.
+    Update all attackers by given value.
 
-    Return number of successes and Unsuccessful phone numbers.
+    Args:
+        field (str): Section that should be update. Like first name or last name.
+        value (str): New value for updating.
+
+    Returns:
+        tuple: Contains a int which is number of succeed updating and
+        a list that contains phones that didn't update.
     """
     number_of_successes = 0
     unsuccessful_phones = []
@@ -74,13 +86,17 @@ async def _update_all_attackers(field: str, value: str) -> Tuple[int, list]:
     return number_of_successes, unsuccessful_phones
 
 
-async def _update_attacker(
-    phone: str, field: str, value: str
-) -> Union[bool, Tuple[bool, str]]:
+async def _update_attacker(phone: str, field: str, value: str) -> bool:
     """
-    Connect to attacker and update it by given field and value.
+    Connect to attacker and update it by given value.
 
-    Return True on success.
+    Args:
+        phone (str): Account phone number.
+        field (str): Section that should be update. Like first name or last name.
+        value (str): New value for updating.
+
+    Returns:
+        bool: True of successful, False otherwise.
     """
     async with await Attacker.init(phone) as attacker:
         if field in ['first_name', 'last_name', 'bio']:
@@ -546,7 +562,15 @@ async def start_attack(
     If any FloodWait error occurred during attack, wait as long as flood wait time and
     get start where the flood occurred.
 
-    :returns: (number of successes, is peer flooded)
+    Args:
+        attacker (Attacker): Attacker client.
+        message (Message): The message object to updating status.
+        targets (list): list of ids to attack.
+        method (str): Send message method.
+        banner (dict): The banner that should be send.
+
+    Returns:
+        tuple: Contains number of successful attacks and a bool that shows the attacker flooded or not.
     """
     succeed_attacks = 0
     peer_flood = False

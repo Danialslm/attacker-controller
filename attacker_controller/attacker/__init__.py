@@ -21,9 +21,16 @@ class Attacker(Client):
     @classmethod
     async def init(cls, phone: str) -> Client:
         """
-        Initiate a Attacker by with given phone.
+        Initiate a Attacker client.
 
-        Raise `AttackerNotFound` if no attacker found with this phone.
+        Args:
+            phone (str): Attacker account phone number.
+
+        Raises:
+            AttackerNotFound: Attacker with given phone doesn't exist.
+
+        Returns:
+            Client: The attacker client.
         """
         attacker_info = await storage.get_attackers(phone)
         if not attacker_info:
@@ -39,8 +46,17 @@ class Attacker(Client):
 
     async def attack(self, target: str, method: str, banner: dict):
         """
-        Send the banner to target.
-        Return True on success.
+        Send the given banner to given target.
+
+        If the target was group or supergroup, the client will join it first.
+
+        Args:
+            target (str): The target chat id.
+            method (str): Send message method.
+            banner (dict): The banner data.
+
+        Returns:
+            bool: True if successful, False otherwise.
         """
         # if the target chat type was group, join to it
         try:

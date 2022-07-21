@@ -54,7 +54,7 @@ async def remove_admin(client: Client, message: Message):
     filters.command('adminlist') & ~filters.edited & filters.user(MAIN_ADMINS)
 )
 async def admin_list(client: Client, message: Message):
-    """Send current admins list."""
+    """Send admin chat id list."""
     admin_counter = 0
     text = messages.ADMIN_LIST
     for chat_id in await storage.get_admins():
@@ -65,7 +65,18 @@ async def admin_list(client: Client, message: Message):
 
 
 async def check_attacker_status(attacker_phone: str):
-    """Check the attacker status."""
+    """
+    Check the attacker status.
+
+    Args:
+        attacker_phone (str): The attacker account phone number
+
+    Returns:
+        str: 
+            `attacking`: if attacker is currently attacking.
+            `limited`: if attacker is reported and can't send message.
+            `deleted/deactivated`: if the attacker account deleted or deactivated.
+    """
     if await storage.get_attacking_attackers(attacker_phone):
         return 'attacking'
 
@@ -87,10 +98,12 @@ async def check_attacker_status(attacker_phone: str):
 
 @app.on_message(filters.command('attackerlist') & ~filters.edited & admin)
 async def attacker_list(client: Client, message: Message):
-    """Send list of attackers phone. Also specify that attacker is flooded or not."""
+    """Send list of copyable attackers phone number and their status."""
     text = messages.ATTACKER_LIST
     attackers = await storage.get_attackers()
-    tasks = [asyncio.create_task(check_attacker_status(attacker)) for attacker in attackers]
+    tasks = [
+        asyncio.create_task(check_attacker_status(attacker)) for attacker in attackers
+    ]
     atks_status = await asyncio.gather(*tasks)
 
     attacker_counter = 0
@@ -117,7 +130,7 @@ async def _remove_attacker(phone):
     filters.regex(r'^\/removeattacker (\+\d+(?:\s+\+\d+)*)$') & ~filters.edited & admin
 )
 async def remove_attacker(client: Client, message: Message):
-    """Remove the given phone(s) from attacker list."""
+    """Remove attacker(s) by the given phone(s)."""
     phones = message.matches[0].group(1).split()
     await asyncio.gather(*[_remove_attacker(phone) for phone in phones])
     await message.reply_text('شماره(های) داده شده از لیست اتکر‌ها حذف شد.')
@@ -143,7 +156,7 @@ async def set_banner(client: Client, message: Message):
             os.remove(f'media/banner/{file}')
 
     banner = message.reply_to_message
-    # get and save message media if any
+    # get and save message media if it has
     media = (
         banner.photo
         or banner.video
@@ -164,7 +177,6 @@ async def set_banner(client: Client, message: Message):
         message.reply_to_message.caption or message.reply_to_message.text or ''
     )
 
-    # store the banner in cache
     await storage.set_banner(
         banner_text,
         banner_media_ext,
@@ -197,7 +209,7 @@ async def get_current_banner(client: Client, message: Message):
 
 @app.on_message(filters.command('help') & ~filters.edited)
 async def help_commands(client: Client, message: Message):
-    """Return the list of available bot commands."""
+    """Return the list of bot commands."""
     await message.reply_text(messages.HELP)
 
 

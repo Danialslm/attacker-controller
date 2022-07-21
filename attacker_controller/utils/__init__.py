@@ -4,7 +4,15 @@ from pyrogram.types import Message
 
 
 def get_send_method_by_media_type(media_type: str) -> str:
-    """Get message sending method based on given media type."""
+    """
+    Get send message method based on the given media type.
+
+    Args:
+        media_type (str): The media type.
+
+    Returns:
+        str: Send message method.
+    """
     if media_type == 'photo':
         method = 'send_photo'
     elif media_type == 'video':
@@ -23,9 +31,13 @@ def get_send_method_by_media_type(media_type: str) -> str:
 
 def get_message_file_extension(message: Message) -> str:
     """
-    Return the message media file extension.
+    Get message media file extension if it has any media.
 
-    If no media is in the given message, empty string will return.
+    Args:
+        message (Message): The message object.
+
+    Returns:
+        str: Media file extension. if the message doesn't have any media, empty string will consider.
     """
     if message.media == 'photo':
         file_ext = 'jpg'
@@ -44,7 +56,12 @@ def get_message_file_extension(message: Message) -> str:
 
 
 def remove_attacker_session(session_name: str):
-    """Remove a attacker session by the given `session_name`."""
+    """
+    Remove attacker session by the given session name.
+
+    Args:
+        session_name (str): The name of the session file.
+    """
     try:
         os.remove(f'attacker_controller/sessions/attackers/{session_name}.session')
     except FileNotFoundError:

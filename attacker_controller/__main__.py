@@ -64,12 +64,11 @@ async def admin_list(client: Client, message: Message):
     await message.reply_text(text)
 
 
-async def check_attacker(attacker_phone: str):
-    """
-    Check the attacker status.
+async def check_attacker_status(attacker_phone: str):
+    """Check the attacker status."""
+    if await storage.get_attacking_attackers(attacker_phone):
+        return 'attacking'
 
-    Return `limited` if the given attacker was limited or `deleted` if the attacker account was deleted.
-    """
     try:
         async with await Attacker.init(attacker_phone) as attacker:
             await attacker.unblock_user('spambot')
@@ -91,7 +90,7 @@ async def attacker_list(client: Client, message: Message):
     """Send list of attackers phone. Also specify that attacker is flooded or not."""
     text = messages.ATTACKER_LIST
     attackers = await storage.get_attackers()
-    tasks = [asyncio.create_task(check_attacker(attacker)) for attacker in attackers]
+    tasks = [asyncio.create_task(check_attacker_status(attacker)) for attacker in attackers]
     atks_status = await asyncio.gather(*tasks)
 
     attacker_counter = 0

@@ -80,7 +80,7 @@ async def check_attacker_status(attacker_phone: str):
     if await storage.get_attacking_attackers(attacker_phone):
         return 'attacking'
 
-    try:
+    async def _is_limited():
         async with await Attacker.init(attacker_phone) as attacker:
             await attacker.unblock_user('spambot')
             await attacker.send_message('spambot', '/start')
@@ -90,8 +90,11 @@ async def check_attacker_status(attacker_phone: str):
             spam_bot_reply = await attacker.get_history('spambot', limit=1)
             spam_bot_reply_text = spam_bot_reply[0].text
             if 'no limits' not in spam_bot_reply_text:
-                return 'limited'
+                return True
 
+    try:
+        if await _is_limited():
+            return 'limited'
     except UserDeactivatedBan:
         return 'deleted/deactivated'
 

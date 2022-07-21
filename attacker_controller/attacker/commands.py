@@ -606,7 +606,7 @@ async def attack(client: Client, message: Message):
     except AttackerNotFound as e:
         await status_msg.edit(e.message)
     except exceptions.AuthKeyUnregistered:
-        await status_msg.edit(messages.PLEASE_WAIT.format(phone))
+        await status_msg.edit(messages.SESSION_EXPIRED.format(phone))
     except exceptions.UserDeactivatedBan:
         await status_msg.edit(messages.ATTACKER_DEACTIVATED_BAN)
     except Exception as e:

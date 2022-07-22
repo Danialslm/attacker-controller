@@ -77,7 +77,7 @@ ATTACKER_IS_BUSY = 'درحال حاضر این اتکر درحال اتک است
 ATTACKER_ATTACKING_FLOOD = 'اتکر در حین اتک به محدودیت خورد. تعداد اتک های موفق: {}.'
 ATTACKER_FLOOD = 'اتکر به محدودیت خورده است.'
 ATTACK_FINISHED = 'اتک تمام شد. تعداد اتک های موفق: {}.'
-ATTACKER_DEACTIVATED_BAN = 'حساب کاربری اتکر غیرفعال یا حذف شده است.'
+ATTACKER_DEACTIVATED = 'حساب کاربری اتکر غیرفعال یا حذف شده است.'
 
 # other stuff
 UNEXPECTED_ERROR = 'خطای غیر منتظره‌ای رخ داده است. {} - {}'

@@ -4,7 +4,7 @@ import os
 from decouple import config
 from pyrogram import Client, filters
 from pyrogram.types import Message
-from pyrogram.errors.exceptions import UserDeactivatedBan
+from pyrogram.errors.exceptions import UserDeactivated
 
 from attacker_controller import MAIN_ADMINS
 from attacker_controller.attacker import Attacker
@@ -95,7 +95,7 @@ async def check_attacker_status(attacker_phone: str):
     try:
         if await _is_limited():
             return 'limited'
-    except UserDeactivatedBan:
+    except UserDeactivated:
         return 'deleted/deactivated'
 
 

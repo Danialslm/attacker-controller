@@ -172,9 +172,9 @@ async def get_attacking_attackers(phone: Optional[str] = None) -> Union[bool, se
 
 async def set_attacking_attacker(*phones):
     """Add the given phonse as attacking attackers."""
-    await redis.sadd(*phones)
+    await redis.sadd('attacking_attackers', *phones)
 
 
 async def remove_attacking_attackers(*phones):
     """Remove the given phones from attacking attackers."""
-    await redis.srem(*phones)
+    await redis.srem('attacking_attackers' ,*phones)

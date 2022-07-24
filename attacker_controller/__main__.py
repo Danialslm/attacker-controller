@@ -1,5 +1,8 @@
 import asyncio
 import os
+import re
+import datetime
+from typing import Literal
 
 from decouple import config
 from pyrogram import Client, filters
@@ -64,12 +67,43 @@ async def admin_list(client: Client, message: Message):
     await message.reply_text(text)
 
 
-async def _check_attacker_status(attacker_phone: str):
+async def _is_limited(attacker_phone):
     """
-    Check the attacker status.
+    Check the attacker is limited or not.
+    Client will connect to check limitation if needed.
 
     Returns:
-        str: 
+        bool: True if the attacker is limited.
+    """
+    if await storage.attacker_is_limited(attacker_phone):
+        return True
+
+    async with await Attacker.init(attacker_phone) as attacker:
+        await attacker.unblock_user('spambot')
+        await attacker.send_message('spambot', '/start')
+
+        # sleep for a while to get spambot reply
+        await asyncio.sleep(1)
+        spam_bot_reply = await attacker.get_history('spambot', limit=1)
+        spam_bot_reply_text = spam_bot_reply[0].text
+        if 'no limits' in spam_bot_reply_text:
+            return False
+
+        # find limitation expire time from text, example format: 22 Jul 2022, 08:38
+        limited_until = datetime.datetime.strptime(
+            re.findall(r'.* limited until (.*) UTC', spam_bot_reply_text)[0],
+            '%d %b %Y, %H:%M',
+        )
+        await storage.set_attacker_limited(attacker_phone, limited_until)
+        return True
+
+
+async def _check_attacker_status(attacker_phone: str) -> Literal['attacking', 'limited', 'deleted/deactivated']:
+    """
+    Check the given attacker status.
+
+    Returns:
+        str:
             `attacking`: if attacker is currently attacking.
             `limited`: if attacker is reported and can't send message.
             `deleted/deactivated`: if the attacker account deleted or deactivated.
@@ -77,20 +111,8 @@ async def _check_attacker_status(attacker_phone: str):
     if await storage.get_attacking_attackers(attacker_phone):
         return 'attacking'
 
-    async def _is_limited():
-        async with await Attacker.init(attacker_phone) as attacker:
-            await attacker.unblock_user('spambot')
-            await attacker.send_message('spambot', '/start')
-
-            # sleep for a while to get spambot reply
-            await asyncio.sleep(1)
-            spam_bot_reply = await attacker.get_history('spambot', limit=1)
-            spam_bot_reply_text = spam_bot_reply[0].text
-            if 'no limits' not in spam_bot_reply_text:
-                return True
-
     try:
-        if await _is_limited():
+        if await _is_limited(attacker_phone):
             return 'limited'
     except UserDeactivated:
         return 'deleted/deactivated'

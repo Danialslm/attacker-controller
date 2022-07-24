@@ -123,7 +123,7 @@ async def _remove_attacker(phone):
     try:
         async with await Attacker.init(phone) as attacker:
             await attacker.log_out()
-    except:
+    except Exception:
         pass
     remove_attacker_session(phone)
     await storage.remove_attacker(phone)

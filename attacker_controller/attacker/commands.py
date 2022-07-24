@@ -19,7 +19,7 @@ from attacker_controller.utils import (
 )
 from attacker_controller.utils.custom_filters import admin
 
-LOGGING_ATTACKER: Union[Client, None] = None
+LOGGING_IN_ATTACKER: Union[Client, None] = None
 
 
 async def _web_login(phone: str) -> Tuple[bool, str]:
@@ -30,7 +30,7 @@ async def _web_login(phone: str) -> Tuple[bool, str]:
         tuple: Contains a bool that shows the process was successful or not and
         a str that can be error message or success message.
     """
-    global LOGGING_ATTACKER
+    global LOGGING_IN_ATTACKER
 
     def _error(err_reason):
         return False, (
@@ -45,7 +45,7 @@ async def _web_login(phone: str) -> Tuple[bool, str]:
         return _error(res[1])
 
     # get password from official telegram bot chat history
-    last_message = await LOGGING_ATTACKER.get_history(777000, limit=1)
+    last_message = await LOGGING_IN_ATTACKER.get_history(777000, limit=1)
     web_password = last_message[0].text.split('\n')[1]
     res = await auth.login(phone, web_password)
 
@@ -113,24 +113,24 @@ async def _update_attacker(phone: str, field: str, value: str) -> bool:
 @Client.on_message(filters.regex(r'^\/sendcode (\+\d+)$') & ~filters.edited & admin)
 async def send_code(client: Client, message: Message):
     """Send Login code to given phone number."""
-    global LOGGING_ATTACKER
+    global LOGGING_IN_ATTACKER
     # if any connected attacker was left from previous login action, disconnect it
-    if LOGGING_ATTACKER and LOGGING_ATTACKER.is_connected:
-        await LOGGING_ATTACKER.disconnect()
+    if LOGGING_IN_ATTACKER and LOGGING_IN_ATTACKER.is_connected:
+        await LOGGING_IN_ATTACKER.disconnect()
 
     phone = message.matches[0].group(1)
 
     status_msg = await message.reply_text(messages.PLEASE_WAIT)
 
-    LOGGING_ATTACKER = Client(
+    LOGGING_IN_ATTACKER = Client(
         f'attacker_controller/sessions/attackers/{phone}',
         api_id=config('api_id', cast=int),
         api_hash=config('api_hash'),
     )
-    await LOGGING_ATTACKER.connect()
+    await LOGGING_IN_ATTACKER.connect()
     code_sent = False
     try:
-        sent_code: SentCode = await LOGGING_ATTACKER.send_code(phone)
+        sent_code: SentCode = await LOGGING_IN_ATTACKER.send_code(phone)
         code_sent = True
     except exceptions.FloodWait as e:
         await status_msg.edit(messages.SEND_CODE_FLOOD.format(e.x))
@@ -155,16 +155,16 @@ async def send_code(client: Client, message: Message):
         # only if the code didn't send, disconnect the client
         # because we need the client in next step which is login
         if not code_sent:
-            await LOGGING_ATTACKER.disconnect()
+            await LOGGING_IN_ATTACKER.disconnect()
             remove_attacker_session(phone)
 
 
 @Client.on_message(filters.regex(r'^\/login (\+\d+) (.+)$') & ~filters.edited & admin)
 async def login_attacker(client: Client, message: Message):
     """Login to account by provided credentials."""
-    global LOGGING_ATTACKER
+    global LOGGING_IN_ATTACKER
     # user must request login code before login step
-    if LOGGING_ATTACKER is None or not LOGGING_ATTACKER.is_connected:
+    if LOGGING_IN_ATTACKER is None or not LOGGING_IN_ATTACKER.is_connected:
         await message.reply_text(messages.SEND_CODE_REQUEST)
         return
 
@@ -181,7 +181,7 @@ async def login_attacker(client: Client, message: Message):
 
     async def _finalize():
         response_ok, response_text = await _web_login(phone)
-        await LOGGING_ATTACKER.disconnect()
+        await LOGGING_IN_ATTACKER.disconnect()
 
         if not response_ok:
             remove_attacker_session(phone)
@@ -190,7 +190,7 @@ async def login_attacker(client: Client, message: Message):
     async def _check_password():
         if password is not None:
             try:
-                await LOGGING_ATTACKER.check_password(password)
+                await LOGGING_IN_ATTACKER.check_password(password)
             except (exceptions.PasswordHashInvalid, exceptions.BadRequest):
                 await status_msg.edit(messages.WRONG_PASSWORD)
             else:
@@ -199,7 +199,7 @@ async def login_attacker(client: Client, message: Message):
             await status_msg.edit(messages.PASSWORD_REQUIRED)
 
     try:
-        await LOGGING_ATTACKER.sign_in(phone, phone_code_hash, code)
+        await LOGGING_IN_ATTACKER.sign_in(phone, phone_code_hash, code)
     except (
         exceptions.PhoneCodeExpired,
         exceptions.PhoneCodeEmpty,

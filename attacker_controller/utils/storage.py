@@ -1,3 +1,5 @@
+import datetime
+import time
 from typing import List, Optional, Tuple, Union
 
 import aioredis
@@ -179,3 +181,35 @@ async def set_attacking_attacker(*phones):
 async def remove_attacking_attackers(*phones):
     """Remove the given phones from attacking attackers."""
     await redis.srem('attacking_attackers', *phones)
+
+
+async def set_attacker_limited(phone: str, until: datetime.datetime):
+    """
+    Set a attacker as limited with calculated expire time.
+
+    If the limitation is over, the key will be removed.
+
+    Args:
+        phone (str): attacker account phone number.
+        until (datetime.datetime): limitation expire time.
+    """
+    # calculate expire time
+    until_timestamp = datetime.datetime.timestamp(until)
+    expire_time = int(until_timestamp - time.time())
+
+    await redis.set(f'limited:{phone}', expire_time, expire_time)
+
+
+async def attacker_is_limited(phone: str) -> bool:
+    """
+    Check the attacker currently limited or not.
+
+    Args:
+        phone (str): attacker account phone number.
+
+    Returns:
+        bool: True if the attacker is limited, False otherwise.
+    """
+    if await redis.get(f'limited:{phone}'):
+        return True
+    return False

@@ -90,12 +90,13 @@ async def _is_limited(attacker_phone):
             return False
 
         # find limitation expire time from text, example format: 22 Jul 2022, 08:38
-        limited_until = datetime.datetime.strptime(
-            re.findall(r'.* limited until (.*) UTC', spam_bot_reply_text),
-            '%d %b %Y, %H:%M',
-        )
+        limited_until = re.findall(r'.* limited until (.*) UTC', spam_bot_reply_text)
         if limited_until:
-            await storage.set_attacker_limited(attacker_phone, limited_until)
+            limited_until_dt = datetime.datetime.strptime(
+                limited_until[0],
+                '%d %b %Y, %H:%M',
+            )
+        await storage.set_attacker_limited(attacker_phone, limited_until_dt)
 
         return True
 

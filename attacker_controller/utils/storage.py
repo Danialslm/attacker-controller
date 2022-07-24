@@ -122,7 +122,7 @@ async def get_random_hash(phone: str) -> str:
     Returns:
         str: Web login `random_hash`.
     """
-    return redis.get(f'random_hash:{phone}')
+    return await redis.get(f'random_hash:{phone}')
 
 
 async def set_banner(text: str, media_ext: str, media_type: str) -> None:

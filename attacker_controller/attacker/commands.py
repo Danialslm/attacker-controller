@@ -27,7 +27,7 @@ async def _web_login(phone: str) -> Tuple[bool, str]:
     Login to the web application.
 
     Returns:
-        tuple: Contains a bool that shows the proccess was successful or not and
+        tuple: Contains a bool that shows the process was successful or not and
         a str that can be error message or success message.
     """
     global LOGGING_ATTACKER
@@ -38,11 +38,11 @@ async def _web_login(phone: str) -> Tuple[bool, str]:
             'دلیل خطا:\n{}'.format(err_reason)
         )
 
-    # now its time to get account api id and api hash
+    # now it's time to get account api id and api hash
     res = await auth.send_password(phone)
     if not res[0]:
         # sending password was failed
-        return await _error(res[1])
+        return _error(res[1])
 
     # get password from official telegram bot chat history
     last_message = await LOGGING_ATTACKER.get_history(777000, limit=1)
@@ -61,11 +61,11 @@ async def _update_all_attackers(field: str, value: str) -> Tuple[int, list]:
     Update all attackers by given value.
 
     Args:
-        field (str): Section that should be update. Like first name or last name.
+        field (str): Section that should be updated. Like first name or last name.
         value (str): New value for updating.
 
     Returns:
-        tuple: Contains a int which is number of succeed updating and
+        tuple: Contains an int which is number of succeed updating and
         a list that contains phones that didn't update.
     """
     number_of_successes = 0
@@ -92,7 +92,7 @@ async def _update_attacker(phone: str, field: str, value: str) -> bool:
 
     Args:
         phone (str): Account phone number.
-        field (str): Section that should be update. Like first name or last name.
+        field (str): Section that should be updated. Like first name or last name.
         value (str): New value for updating.
 
     Returns:
@@ -163,7 +163,7 @@ async def send_code(client: Client, message: Message):
 async def login_attacker(client: Client, message: Message):
     """Login to account by provided credentials."""
     global LOGGING_ATTACKER
-    # user must requested login code for the phone
+    # user must request login code before login step
     if LOGGING_ATTACKER is None or not LOGGING_ATTACKER.is_connected:
         await message.reply_text(messages.SEND_CODE_REQUEST)
         return
@@ -209,7 +209,7 @@ async def login_attacker(client: Client, message: Message):
     except exceptions.PhoneNumberUnoccupied:
         await status_msg.edit(messages.PHONE_NUMBER_UNOCCUPIED)
     except exceptions.SignInFailed:
-        await status_msg.edit(messages.SIGNIN_FALIED)
+        await status_msg.edit(messages.SIGNIN_FAILED)
     except exceptions.SessionPasswordNeeded:
         await _check_password()
     except Exception as e:

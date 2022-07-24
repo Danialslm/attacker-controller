@@ -104,7 +104,7 @@ async def send_password(phone: str) -> Tuple[bool, str]:
     Returns:
         Tuple[bool, str]: Contains success of the process and `random_hash`.
 
-        If the process was not successfull, a error message will consider instead of `random_hash`.
+        If the process was not successfully, an error message will consider instead of `random_hash`.
     """
     url = 'https://my.telegram.org/auth/send_password'
     data = {'phone': phone}

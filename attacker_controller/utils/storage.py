@@ -40,7 +40,7 @@ async def add_new_attacker(phone: str, api_id: str, api_hash: str):
     Add a new attacker with provided credentials.
 
     Args:
-        phone (str): Attacker acoount phone number.
+        phone (str): Attacker account phone number.
         api_id (str): Attacker account `api_id`.
         api_hash (str): Attacker account `api_hash`.
     """
@@ -162,8 +162,9 @@ async def get_attacking_attackers(phone: Optional[str] = None) -> Union[bool, se
         phone (str, optional): Attacker account phone number. Defaults to None.
 
     Returns:
-        bool | set: If the `phone` was provided, a bool that shows the attacker with given phone is attacking or not will return,
-        else a list of attacking attacker will return
+         bool | set: If the `phone` was provided,
+         a bool that shows the attacker with given phone is attacking or
+         not will return, else a list of attacking attacker will return
     """
     if phone:
         return await redis.sismember('attacking_attackers', phone)
@@ -171,10 +172,10 @@ async def get_attacking_attackers(phone: Optional[str] = None) -> Union[bool, se
 
 
 async def set_attacking_attacker(*phones):
-    """Add the given phonse as attacking attackers."""
+    """Add the given phone as attacking attackers."""
     await redis.sadd('attacking_attackers', *phones)
 
 
 async def remove_attacking_attackers(*phones):
     """Remove the given phones from attacking attackers."""
-    await redis.srem('attacking_attackers' ,*phones)
+    await redis.srem('attacking_attackers', *phones)

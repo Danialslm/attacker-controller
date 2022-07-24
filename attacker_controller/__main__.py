@@ -64,12 +64,9 @@ async def admin_list(client: Client, message: Message):
     await message.reply_text(text)
 
 
-async def check_attacker_status(attacker_phone: str):
+async def _check_attacker_status(attacker_phone: str):
     """
     Check the attacker status.
-
-    Args:
-        attacker_phone (str): The attacker account phone number
 
     Returns:
         str: 
@@ -105,7 +102,7 @@ async def attacker_list(client: Client, message: Message):
     text = messages.ATTACKER_LIST
     attackers = await storage.get_attackers()
     tasks = [
-        asyncio.create_task(check_attacker_status(attacker)) for attacker in attackers
+        asyncio.create_task(_check_attacker_status(attacker)) for attacker in attackers
     ]
     atks_status = await asyncio.gather(*tasks)
 

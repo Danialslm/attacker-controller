@@ -195,7 +195,8 @@ async def set_attacker_limited(phone: str, until: datetime.datetime):
     """
     # calculate expire time
     until_timestamp = datetime.datetime.timestamp(until)
-    expire_time = int(until_timestamp - time.time())
+    now = datetime.datetime.timestamp(datetime.datetime.utcnow())
+    expire_time = int(until_timestamp - now)
 
     await redis.set(f'limited:{phone}', expire_time, expire_time)
 

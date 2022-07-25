@@ -570,7 +570,7 @@ async def start_attack(
         banner (dict): The banner that should be send.
 
     Returns:
-        tuple: Contains number of successful attacks and a bool that shows the attacker flooded or not.
+        tuple: Contains number of successful attacks and a bool that shows the attacker flooded during the attack or not.
     """
     succeed_attacks = 0
     peer_flood = False
@@ -624,7 +624,7 @@ async def attack(client: Client, message: Message):
     try:
         async with await Attacker.init(phone) as attacker:
             await storage.set_attacking_attacker(phone)
-            succeed_attacks, is_flooded = await start_attack(
+            succeed_attacks, flooded_during_attack = await start_attack(
                 attacker, status_msg, targets, method, banner
             )
     except AttackerNotFound as e:
@@ -638,11 +638,11 @@ async def attack(client: Client, message: Message):
         exception_class = e.__class__.__name__
         await status_msg.edit(messages.UNEXPECTED_ERROR.format(exception_class, e))
     else:
-        if is_flooded:
+        if flooded_during_attack:
             if succeed_attacks > 0:
-                text = messages.ATTACKER_ATTACKING_FLOOD.format(succeed_attacks)
+                text = messages.FLOODED_DURING_ATTACK.format(succeed_attacks)
             else:
-                text = messages.ATTACKER_FLOOD
+                text = messages.ATTACKER_IS_FLOODED
         else:
             text = messages.ATTACK_FINISHED.format(succeed_attacks)
         await status_msg.edit(text)

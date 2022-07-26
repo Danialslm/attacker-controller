@@ -96,7 +96,7 @@ async def _is_limited(attacker_phone):
                 limited_until[0],
                 '%d %b %Y, %H:%M',
             )
-        await storage.set_attacker_limited(attacker_phone, limited_until_dt)
+            await storage.set_attacker_limited(attacker_phone, limited_until_dt)
 
         return True
 

@@ -81,9 +81,9 @@ async def _update_all_attackers(field: str, value: str) -> Tuple[int, list]:
     for task, phone in zip(update_tasks, attackers):
         task_exception = task.exception()
         if task_exception is None:
-            logger.error(f'Error updating attacker {phone}: {task_exception}')
             successfull_updates_count += task.result()
         else:
+            logger.error(f'Error updating attacker {phone}: {task_exception}')
             unsuccessful_phones.append(phone)
 
     return successfull_updates_count, unsuccessful_phones

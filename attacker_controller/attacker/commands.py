@@ -66,25 +66,27 @@ async def _update_all_attackers(field: str, value: str) -> Tuple[int, list]:
         value (str): New value for updating.
 
     Returns:
-        tuple: Contains an int which is number of succeed updating and
-        a list that contains phones that didn't update.
+        tuple: Contains an int which is number of successful updates and
+        a list of phones that weren't update.
     """
-    number_of_successes = 0
+    successfull_updates_count = 0
     unsuccessful_phones = []
+    attackers = await storage.get_attackers()
+    update_tasks = [
+        asyncio.create_task(_update_attacker(phone, field, value))
+        for phone in attackers
+    ]
+    await asyncio.gather(*update_tasks, return_exceptions=True)
 
-    # get the phones that didn't update
-    for atk_phone in await storage.get_attackers():
-        try:
-            succeed = await _update_attacker(atk_phone, field, value)
-        except Exception as e:
-            logger.error(f'Error on updating attacker {atk_phone}: {e}')
-            unsuccessful_phones.append(atk_phone)
+    for task, phone in zip(update_tasks, attackers):
+        task_exception = task.exception()
+        if task_exception is None:
+            logger.error(f'Error updating attacker {phone}: {task_exception}')
+            successfull_updates_count += task.result()
         else:
-            if succeed:
-                number_of_successes += 1
-            else:
-                unsuccessful_phones.append(atk_phone)
-    return number_of_successes, unsuccessful_phones
+            unsuccessful_phones.append(phone)
+
+    return successfull_updates_count, unsuccessful_phones
 
 
 async def _update_attacker(phone: str, field: str, value: str) -> bool:

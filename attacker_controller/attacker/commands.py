@@ -10,6 +10,7 @@ from pyrogram.types import Message, SentCode
 
 from attacker_controller import logger, messages
 from attacker_controller.attacker import Attacker
+from attacker_controller.attacker.decorators import check_attacker_update_constraint
 from attacker_controller.attacker.exceptions import AttackerNotFound
 from attacker_controller.utils import (
     storage,
@@ -222,6 +223,7 @@ async def login_attacker(client: Client, message: Message):
 @Client.on_message(
     filters.command('setfirstnameall') & ~filters.edited & filters.reply & admin
 )
+@check_attacker_update_constraint
 async def set_first_name_all(client: Client, message: Message):
     """Set a first name for all attackers."""
     provided_first_name = message.reply_to_message.text
@@ -248,6 +250,7 @@ async def set_first_name_all(client: Client, message: Message):
 @Client.on_message(
     filters.command('setlastnameall') & ~filters.edited & filters.reply & admin
 )
+@check_attacker_update_constraint
 async def set_last_name_all(client: Client, message: Message):
     """Set a last name for all attackers."""
     provided_last_name = message.reply_to_message.text
@@ -274,6 +277,7 @@ async def set_last_name_all(client: Client, message: Message):
 @Client.on_message(
     filters.command('setbioall') & ~filters.edited & filters.reply & admin
 )
+@check_attacker_update_constraint
 async def set_bio_all(client: Client, message: Message):
     """Set a bio for all attackers."""
     provided_bio = message.reply_to_message.text
@@ -298,6 +302,7 @@ async def set_bio_all(client: Client, message: Message):
 @Client.on_message(
     filters.command('setprofileall') & ~filters.edited & filters.reply & admin
 )
+@check_attacker_update_constraint
 async def set_profile_photo_all(client: Client, message: Message):
     """Set a profile photo for all attackers."""
     provided_photo = message.reply_to_message.photo
@@ -327,6 +332,7 @@ async def set_profile_photo_all(client: Client, message: Message):
 
 
 @Client.on_message(filters.regex(r'^\/setfirstname (\+\d+)$') & ~filters.edited & admin)
+@check_attacker_update_constraint
 async def set_first_name(client: Client, message: Message):
     """Start first name for a specific attacker."""
     phone = message.matches[0].group(1)
@@ -356,6 +362,7 @@ async def set_first_name(client: Client, message: Message):
 
 
 @Client.on_message(filters.regex(r'^\/setlastname (\+\d+)$') & ~filters.edited & admin)
+@check_attacker_update_constraint
 async def set_last_name(client: Client, message: Message):
     """Start last name for a specific attacker."""
     phone = message.matches[0].group(1)
@@ -385,6 +392,7 @@ async def set_last_name(client: Client, message: Message):
 
 
 @Client.on_message(filters.regex(r'^\/setbio (\+\d+)$') & ~filters.edited & admin)
+@check_attacker_update_constraint
 async def set_bio(client: Client, message: Message):
     """Start bio for a specific attacker."""
     phone = message.matches[0].group(1)
@@ -414,6 +422,7 @@ async def set_bio(client: Client, message: Message):
 
 
 @Client.on_message(filters.regex(r'^\/setprofile (\+\d+)$') & ~filters.edited & admin)
+@check_attacker_update_constraint
 async def set_profile_photo(client: Client, message: Message):
     """Start profile photo for a specific attacker."""
     phone = message.matches[0].group(1)
@@ -451,6 +460,7 @@ async def set_profile_photo(client: Client, message: Message):
 
 
 @Client.on_message(filters.regex(r'^\/setusername (\+\d+)$') & ~filters.edited & admin)
+@check_attacker_update_constraint
 async def set_username(client: Client, message: Message):
     """Start username for a specific attacker."""
     phone = message.matches[0].group(1)

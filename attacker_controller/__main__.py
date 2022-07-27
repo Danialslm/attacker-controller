@@ -169,7 +169,7 @@ async def clean_attacker_list(client: Client, message: Message):
     await asyncio.gather(
         *[_remove_attacker(phone) for phone in await storage.get_attackers()]
     )
-    await message.reply_text('تمام اتکرها از ربات پاک شدند.')
+    await message.reply_text(messages.ATTACKER_LIST_CLEANED)
 
 
 @app.on_message(filters.command('setbanner') & ~filters.edited & filters.reply & admin)

@@ -129,7 +129,7 @@ async def attacker_list(client: Client, message: Message):
     tasks = [
         asyncio.create_task(_check_attacker_status(attacker)) for attacker in attackers
     ]
-    atks_status = await asyncio.gather(*tasks)
+    atks_status = await asyncio.gather(*tasks, return_exceptions=True)
 
     attacker_counter = 0
     for attacker, status in zip(attackers, atks_status):

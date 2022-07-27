@@ -1,5 +1,6 @@
 import asyncio
 import os
+import shutil
 import re
 import datetime
 from typing import Literal
@@ -176,9 +177,7 @@ async def clean_attacker_list(client: Client, message: Message):
 async def set_banner(client: Client, message: Message):
     """Set a new banner."""
     # remove previous banner file
-    for _, __, files in os.walk('media/banner'):
-        for file in files:
-            os.remove(f'media/banner/{file}')
+    shutil.rmtree('media/banner', ignore_errors=True)
 
     banner = message.reply_to_message
     # get and save message media if it has
@@ -193,6 +192,8 @@ async def set_banner(client: Client, message: Message):
     if media:
         # download the media
         banner_media_ext = get_message_file_extension(banner)
+        os.makedirs('media/banner', exist_ok=True)
+
         await message.reply_to_message.download(
             file_name=f'media/banner/banner.{banner_media_ext}'
         )

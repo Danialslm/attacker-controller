@@ -615,7 +615,7 @@ async def attack(client: Client, message: Message):
     phone = message.matches[0].group(1)
 
     # it is not possible to attack multiple places simultaneously
-    if await storage.get_attacking_attackers():
+    if await storage.get_attacking_attackers(phone):
         await message.reply_text(messages.ATTACKER_IS_BUSY)
         return
 
